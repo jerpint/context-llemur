@@ -1,0 +1,63 @@
+# gid
+
+## Purpose
+You are currently using the git-ideas (gid) memory module. 
+It allows LLMs and humans to keep track of memories and context for a given project in a distributed way.
+It is meant to be collaborative, such that LLMs and humans can contribute to it asynchronously.
+
+## How it works
+It acts much like a git repository would. 
+Contributors can add/edit their observations, each on their own branch.
+New ideas can safely be explored, and if interesting, will be merged to the main branch.
+
+The goal is to explore trees of possibilities, while keeping old attemps intact and indexed.
+
+## Rules
+There aren't strict rules to follow, but there can be conventions which are project dependent.
+It is important to keep files readable for both humans and LLMs. 
+It is OK to keep notes and scratchpads, but the idea is to be mindful of context lengths.
+It is recommended to use descriptive branch names for the ideas that will be explored.
+Commits should properly capture what was done.
+
+Ideally, the entire repo should fit in an LLM context length, though this is a soft requirement.
+
+## Conventions
+The main branch is the source of truth for all collaborators.
+When exploring new ideas, simply checkout a new branch, explore ideas, and commit your findings as you go along.
+No collaborator should ever commit to the main branch.
+Merges will happen if/when decided by the maintainers of the repo, which can be humans or LLMs. 
+
+Each project can have its own additional conventions under /conventions
+
+## Available commands
+
+rgrep
+cat
+touch
+mkdir
+rm
+git
+
+
+This file, ./gid.txt, will always be present at the root for context.
+Do not modify this file. It serves as global context.
+
+
+conventions
+ -
+goals
+ - 
+ideas
+ -
+
+Available commands:
+
+using gid, you can view/edit/delete/create new files.
+You can also list the file tree, cat files, and rgrep files. 
+
+
+gid uses git under the hood to do version control.
+
+
+
+The goal is to keep 
