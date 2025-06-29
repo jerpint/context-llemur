@@ -1,5 +1,0 @@
-* Never commit to main branch
-* Keep files short
-* If files start getting long, break them up into files, with descriptive names
-* Keep a summary at the top of each file, such that a "head" quickly explains what is in the file
-* If necessary, you can also keep a summary.txt inside each subfolder
