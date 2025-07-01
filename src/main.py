@@ -18,14 +18,14 @@ def run_git(cmd, capture_output=True):
         click.echo(f"Git error: {e}", err=True)
         sys.exit(1)
 
-def is_gid_repo():
-    """Check if current directory is a gid repository"""
-    return Path('.git').exists() and Path('.gid').exists()
+def is_ctx_repo():
+    """Check if current directory is a ctx repository"""
+    return Path('.git').exists() and Path('.ctx').exists()
 
-def ensure_gid_repo():
-    """Ensure we're in a gid repository"""
-    if not is_gid_repo():
-        click.echo("Error: Not in a gid repository. Run 'gid init' first.", err=True)
+def ensure_ctx_repo():
+    """Ensure we're in a ctx repository"""
+    if not is_ctx_repo():
+        click.echo("Error: Not in a ctx repository. Run 'ctx init' first.", err=True)
         sys.exit(1)
 
 def get_template_dir():
@@ -37,24 +37,23 @@ def get_template_dir():
 @click.group()
 @click.version_option()
 def main():
-    """gid: git for ideas - collaborative memory for humans and LLMs"""
+    """ctx: collaborative memory for humans and LLMs"""
     pass
 
 @main.command()
 def init():
-    """Initialize a new gid repository"""
-    if Path('.gid').exists():
-        click.echo("Error: .gid directory already exists", err=True)
+    """Initialize a new ctx repository"""
+    if Path('.ctx').exists():
+        click.echo("Error: .ctx directory already exists", err=True)
         sys.exit(1)
     
-    # Initialize git repo if not already initialized
-    if not Path('.git').exists():
-        click.echo("Initializing git repository...")
-        run_git(['init'], capture_output=False)
     
-    # Create .gid directory
-    gid_dir = Path('.gid')
-    gid_dir.mkdir()
+    current_dir = Path.cwd()
+
+    # Create ctx directory
+    ctx_dir = Path('ctx')
+    ctx_dir.mkdir()
+
     
     # Copy template files
     template_dir = get_template_dir()
@@ -62,26 +61,35 @@ def init():
         click.echo(f"Error: Template directory not found at {template_dir}", err=True)
         sys.exit(1)
     
-    click.echo("Creating .gid directory and copying template files...")
+    click.echo("Creating .ctx directory and copying template files...")
     
     # Copy all files from template directory
     for template_file in template_dir.glob('*'):
         if template_file.is_file():
-            dest_file = gid_dir / template_file.name
+            dest_file = ctx_dir / template_file.name
             shutil.copy2(template_file, dest_file)
             click.echo(f"Copied {template_file.name}")
     
-    # Add .gid to git
-    run_git(['add', '.gid/'], capture_output=False)
+    click.echo("Initializing ctx repository...")
+
+    # intialize the git repo in the .ctx directory
+    os.chdir(ctx_dir)
+    run_git(['init'], capture_output=False)
+
+    # Add .ctx to git
+    run_git(['add', '-A'], capture_output=False)
     
-    click.echo("✓ gid repository initialized successfully!")
-    click.echo("✓ Template files copied to .gid/")
-    click.echo("✓ Files staged for commit")
+    # Commit the initial files
+    run_git(['commit', '-m', 'first commit'], capture_output=False)
+
+    os.chdir(current_dir)
+    
+    click.echo(f"✓ ctx repository initialized successfully in {ctx_dir}")
+    click.echo(f"✓ Files committed with 'first commit' message in {ctx_dir}")
     click.echo("")
     click.echo("Next steps:")
-    click.echo("1. git commit -m 'Initial gid setup'")
-    click.echo("2. Edit .gid/goals.txt with your project goals")
-    click.echo("3. Start exploring ideas on feature branches!")
+    click.echo(f"1. Edit {ctx_dir}/ctx.txt with your context")
+    click.echo("2. Start exploring ideas on feature branches!")
 
 if __name__ == "__main__":
     main()

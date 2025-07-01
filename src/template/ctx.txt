@@ -1,7 +1,7 @@
-# gid
+# ctx
 
 ## Purpose
-You are currently using the git-ideas (gid) memory module. 
+You are currently using the ctx memory module. 
 It allows LLMs and humans to keep track of memories and context for a given project in a distributed way.
 It is meant to be collaborative, such that LLMs and humans can contribute to it asynchronously.
 
@@ -39,7 +39,7 @@ rm
 git
 
 
-This file, ./gid.txt, will always be present at the root for context.
+This file, ./ctx.txt, will always be present at the root for context.
 Do not modify this file. It serves as global context.
 
 
@@ -52,11 +52,11 @@ ideas
 
 Available commands:
 
-using gid, you can view/edit/delete/create new files.
+using ctx, you can view/edit/delete/create new files.
 You can also list the file tree, cat files, and rgrep files. 
 
 
-gid uses git under the hood to do version control.
+ctx uses git under the hood to do version control.
 
 
 

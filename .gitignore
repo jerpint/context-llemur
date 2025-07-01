@@ -6,6 +6,7 @@ dist/
 wheels/
 *.egg-info
 
+ctx/
+
 # Virtual environments
 .venv
-.ideas

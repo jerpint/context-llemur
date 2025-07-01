@@ -1,7 +1,24 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "gid"
+name = "ctx"
 version = "0.1.0"
-description = "Add your description here"
+description = "llm-context - collaborative memory for humans and LLMs"
 readme = "README.md"
-requires-python = ">=3.9"
-dependencies = []
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "jerpint"}
+]
+dependencies = [
+    "click>=8.0.0",
+]
+
+[project.scripts]
+ctx = "src.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
