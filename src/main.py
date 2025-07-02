@@ -205,45 +205,48 @@ def init():
         sys.exit(1)
 
 @main.command()
-@click.argument('branch_name')
-@click.option('--preview', is_flag=True, help='Show what would be merged without performing the merge')
-@click.option('--target', default='main', help='Target branch to merge into (default: main)')
-def merge(branch_name, preview, target):
-    """Merge ideas from another branch"""
+@click.argument('exploration')
+@click.option('--preview', is_flag=True, help='Show what would be integrated without performing the integration')
+@click.option('--target', default='main', help='Target branch to integrate into (default: main)')
+def integrate(exploration, preview, target):
+    """Integrate insights from an exploration
+    
+    Git equivalent: git merge <exploration>
+    """
     ensure_ctx_repo()
     
     # Validate branches exist
     all_branches = get_all_branches()
-    if branch_name not in all_branches:
-        click.echo(f"Error: Branch '{branch_name}' does not exist", err=True)
-        click.echo(f"Available branches: {', '.join(all_branches)}")
+    if exploration not in all_branches:
+        click.echo(f"Error: Exploration '{exploration}' does not exist", err=True)
+        click.echo(f"Available explorations: {', '.join(all_branches)}")
         sys.exit(1)
     
     if target not in all_branches:
         click.echo(f"Error: Target branch '{target}' does not exist", err=True)
         sys.exit(1)
     
-    if branch_name == target:
-        click.echo(f"Error: Cannot merge branch into itself", err=True)
+    if exploration == target:
+        click.echo(f"Error: Cannot integrate exploration into itself", err=True)
         sys.exit(1)
     
     # Show preview
-    has_conflicts = show_merge_preview(branch_name, target)
+    has_conflicts = show_merge_preview(exploration, target)
     
     if preview:
         return
     
     if has_conflicts:
-        if not click.confirm(f"\n⚠️  Conflicts detected. Proceed with merge anyway?"):
-            click.echo("Merge cancelled.")
+        if not click.confirm(f"\n⚠️  Conflicts detected. Proceed with integration anyway?"):
+            click.echo("Integration cancelled.")
             return
     
-    # Perform the merge
-    click.echo(f"\nProceeding with merge...")
-    if perform_merge(branch_name, target):
-        click.echo(f"\n🎉 Ideas from '{branch_name}' successfully merged into '{target}'!")
+    # Perform the integration
+    click.echo(f"\nProceeding with integration...")
+    if perform_merge(exploration, target):
+        click.echo(f"\n🎉 Insights from '{exploration}' successfully integrated into '{target}'!")
     else:
-        click.echo(f"\n❌ Merge failed. Check the ctx/ directory for any conflicts that need manual resolution.")
+        click.echo(f"\n❌ Integration failed. Check the ctx/ directory for any conflicts that need manual resolution.")
 
 @main.command()
 def status():
@@ -270,10 +273,15 @@ def status():
         except:
             click.echo("\nCould not get repository status")
 
+
+
 @main.command()
-@click.argument('branch_name')
-def branch(branch_name):
-    """Create and switch to a new branch for exploring ideas"""
+@click.argument('topic')
+def explore(topic):
+    """Start exploring a new topic or idea
+    
+    Git equivalent: git checkout -b <topic>
+    """
     ensure_ctx_repo()
     
     repo = get_ctx_repo()
@@ -283,13 +291,44 @@ def branch(branch_name):
     
     try:
         # Create and checkout new branch
-        new_branch = repo.create_head(branch_name)
+        new_branch = repo.create_head(topic)
         new_branch.checkout()
-        click.echo(f"✓ Created and switched to branch '{branch_name}'")
-        click.echo("Start exploring your ideas!")
+        click.echo(f"✓ Started exploring '{topic}'")
+        click.echo("Document your ideas and insights as you explore!")
         
     except Exception as e:
-        click.echo(f"Error creating branch: {e}", err=True)
+        click.echo(f"Error starting exploration: {e}", err=True)
+        sys.exit(1)
+
+@main.command()
+@click.argument('message')
+def capture(message):
+    """Capture current insights and thinking
+    
+    Git equivalent: git add . && git commit -m "<message>"
+    """
+    ensure_ctx_repo()
+    
+    repo = get_ctx_repo()
+    if not repo:
+        click.echo("Error: No ctx repository found", err=True)
+        sys.exit(1)
+    
+    try:
+        # Check if there are any changes to commit
+        if not repo.is_dirty(untracked_files=True):
+            click.echo("No changes to capture.")
+            return
+        
+        # Stage all changes
+        repo.git.add('-A')
+        
+        # Commit with the provided message
+        repo.index.commit(message)
+        click.echo(f"✓ Captured: {message}")
+        
+    except Exception as e:
+        click.echo(f"Error capturing insights: {e}", err=True)
         sys.exit(1)
 
 if __name__ == "__main__":

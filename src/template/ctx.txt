@@ -14,8 +14,8 @@ Not a knowledge base, but a living memory that travels between LLM sessions.
 ## How It Works
 ctx works like git, but for thoughts and ideas instead of code:
 - **Commits** represent crystallized thoughts or decisions
-- **Branches** are alternative explorations of a concept  
-- **Merges** combine successful idea threads
+- **Explorations** are alternative ways of investigating a concept  
+- **Integrations** combine successful insight threads
 - **History** preserves the evolution of thinking
 
 ## Available Commands
@@ -26,16 +26,21 @@ ctx init                    # Initialize a new ctx repository
 ctx status                  # Show current branch and repository status
 ```
 
-### Branch Operations  
+### Exploring Ideas
 ```bash
-ctx branch <name>           # Create and switch to a new idea branch
+ctx explore <topic>         # Start exploring a new topic or idea
+                           # Git equivalent: git checkout -b <topic>
+ctx capture "<message>"     # Capture current insights and thinking
+                           # Git equivalent: git add . && git commit -m "<message>"
 ```
 
-### Merging Ideas
+
+### Integrating Insights
 ```bash
-ctx merge <branch>          # Merge ideas from another branch
-ctx merge <branch> --preview # Preview what would be merged
-ctx merge <branch> --target <branch> # Merge into specific target branch
+ctx integrate <exploration>  # Integrate insights from an exploration
+                            # Git equivalent: git merge <exploration>
+ctx integrate <exploration> --preview # Preview what would be integrated
+ctx integrate <exploration> --target <branch> # Integrate into specific target branch
 ```
 
 ## Workflow Examples
@@ -44,18 +49,20 @@ ctx merge <branch> --target <branch> # Merge into specific target branch
 ```bash
 ctx init                    # Initialize repository
 # Edit ctx/ctx.txt and ctx/goals.txt with your context
-ctx branch "explore-idea-x" # Create branch for new exploration
-# Work on your ideas, commit changes with git
-ctx merge "explore-idea-x" --preview # See what would merge
-ctx merge "explore-idea-x"  # Merge successful ideas back
+ctx explore "bias-detection-methods" # Start exploring a new topic
+# Work on your ideas, document insights
+ctx capture "identified key bias sources in training data"
+ctx integrate "bias-detection-methods" --preview # See what would be integrated
+ctx integrate "bias-detection-methods"  # Integrate successful insights back
 ```
 
 ### Collaborative Thinking
 ```bash
 ctx status                  # See current state
-ctx branch "alternative-approach" # Explore different direction  
-# Document findings, commit progress
-ctx merge "alternative-approach" --preview # Review before merging
+ctx explore "alternative-approach" # Start exploring different direction  
+# Document findings and insights
+ctx capture "discovered performance bottleneck in current approach"
+ctx integrate "alternative-approach" --preview # Review before integrating
 ```
 
 ## Conventions
@@ -73,10 +80,10 @@ ctx merge "alternative-approach" --preview # Review before merging
 - Use descriptive filenames that capture the content purpose
 - Aim to keep total repository size manageable for LLM context
 
-### Merging Protocol
-- Always preview merges first with `--preview` flag
+### Integration Protocol
+- Always preview integrations first with `--preview` flag
 - Main branch represents the current consensus/truth
-- Feature branches are for exploration and experimentation
+- Exploration branches are for trying new ideas and approaches
 - Resolve conflicts thoughtfully, preserving valuable insights from both sides
 
 ## Technical Notes
