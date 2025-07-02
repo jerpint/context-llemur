@@ -1,7 +1,7 @@
-# ctx
+# context (ctx)
 
 ## Purpose
-You are currently using the ctx memory module. 
+You are currently using the context (ctx) memory module. 
 It allows LLMs and humans to keep track of memories and context for a given project in a distributed way.
 It is meant to be collaborative, such that LLMs and humans can contribute to it asynchronously.
 
