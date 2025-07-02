@@ -1,63 +1,88 @@
-# context (ctx)
+# ctx - Collaborative Memory for Humans and LLMs
 
-## Purpose
-You are currently using the context (ctx) memory module. 
-It allows LLMs and humans to keep track of memories and context for a given project in a distributed way.
-It is meant to be collaborative, such that LLMs and humans can contribute to it asynchronously.
+## What is ctx?
+ctx is a version-controlled collaborative thinking system where ideas evolve through commits, branch into experiments, and merge across different minds (human and AI). 
 
-## How it works
-It acts much like a git repository would. 
-Contributors can add/edit their observations, each on their own branch.
-New ideas can safely be explored, and if interesting, will be merged to the main branch.
+Not a knowledge base, but a living memory that travels between LLM sessions.
 
-The goal is to explore trees of possibilities, while keeping old attemps intact and indexed.
+## Key Problems We Solve
+- **LLM Amnesia**: Every new session starts from zero
+- **Lost Context**: Valuable conversations vanish when the window closes  
+- **Linear Thinking**: Can't branch conversations or explore alternatives
+- **Fragmented Memory**: Context scattered across different tools
 
-## Rules
-There aren't strict rules to follow, but there can be conventions which are project dependent.
-It is important to keep files readable for both humans and LLMs. 
-It is OK to keep notes and scratchpads, but the idea is to be mindful of context lengths.
-It is recommended to use descriptive branch names for the ideas that will be explored.
-Commits should properly capture what was done.
+## How It Works
+ctx works like git, but for thoughts and ideas instead of code:
+- **Commits** represent crystallized thoughts or decisions
+- **Branches** are alternative explorations of a concept  
+- **Merges** combine successful idea threads
+- **History** preserves the evolution of thinking
 
-Ideally, the entire repo should fit in an LLM context length, though this is a soft requirement.
+## Available Commands
+
+### Repository Management
+```bash
+ctx init                    # Initialize a new ctx repository
+ctx status                  # Show current branch and repository status
+```
+
+### Branch Operations  
+```bash
+ctx branch <name>           # Create and switch to a new idea branch
+```
+
+### Merging Ideas
+```bash
+ctx merge <branch>          # Merge ideas from another branch
+ctx merge <branch> --preview # Preview what would be merged
+ctx merge <branch> --target <branch> # Merge into specific target branch
+```
+
+## Workflow Examples
+
+### Starting a New Project
+```bash
+ctx init                    # Initialize repository
+# Edit ctx/ctx.txt and ctx/goals.txt with your context
+ctx branch "explore-idea-x" # Create branch for new exploration
+# Work on your ideas, commit changes with git
+ctx merge "explore-idea-x" --preview # See what would merge
+ctx merge "explore-idea-x"  # Merge successful ideas back
+```
+
+### Collaborative Thinking
+```bash
+ctx status                  # See current state
+ctx branch "alternative-approach" # Explore different direction  
+# Document findings, commit progress
+ctx merge "alternative-approach" --preview # Review before merging
+```
 
 ## Conventions
-The main branch is the source of truth for all collaborators.
-When exploring new ideas, simply checkout a new branch, explore ideas, and commit your findings as you go along.
-No collaborator should ever commit to the main branch.
-Merges will happen if/when decided by the maintainers of the repo, which can be humans or LLMs. 
 
-Each project can have its own additional conventions under /conventions
+### Branch Naming
+- Use descriptive names: `bias-detection-approach`, `performance-optimization`
+- Separate words with hyphens for readability
 
-## Available commands
+### Commit Strategy  
+- Commit early and often to preserve thinking evolution
+- Use clear commit messages that capture the insight or decision
 
-rgrep
-cat
-touch
-mkdir
-rm
-git
+### File Organization
+- Keep files focused and readable for both humans and LLMs
+- Use descriptive filenames that capture the content purpose
+- Aim to keep total repository size manageable for LLM context
 
+### Merging Protocol
+- Always preview merges first with `--preview` flag
+- Main branch represents the current consensus/truth
+- Feature branches are for exploration and experimentation
+- Resolve conflicts thoughtfully, preserving valuable insights from both sides
 
-This file, ./ctx.txt, will always be present at the root for context.
-Do not modify this file. It serves as global context.
+## Technical Notes
+- ctx repositories are standard git repositories with additional tooling
+- All git commands work normally within the ctx/ directory
+- Files are stored as plain text for maximum compatibility
+- Repository state travels with the ctx/ directory
 
-
-conventions
- -
-goals
- - 
-ideas
- -
-
-Available commands:
-
-using ctx, you can view/edit/delete/create new files.
-You can also list the file tree, cat files, and rgrep files. 
-
-
-ctx uses git under the hood to do version control.
-
-
-
-The goal is to keep 
+This file (ctx.txt) provides global context and should not be modified during normal usage.
