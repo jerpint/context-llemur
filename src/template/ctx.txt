@@ -1,4 +1,4 @@
-# ctx - Collaborative Memory for Humans and LLMs
+# context-llemur: Collaborative Memory for Humans and LLMs
 
 ## What is ctx?
 ctx is a version-controlled collaborative thinking system where ideas evolve through commits, branch into experiments, and merge across different minds (human and AI). 

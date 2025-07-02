@@ -152,7 +152,7 @@ def perform_merge(source_branch, target_branch='main'):
 @click.group()
 @click.version_option()
 def main():
-    """ctx: collaborative memory for humans and LLMs"""
+    """ctx: collaborative memory for humans and LLMs (context-llemur)"""
     pass
 
 @main.command()
