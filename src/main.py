@@ -10,7 +10,7 @@ import tomli_w
 from git import Repo, InvalidGitRepositoryError, GitCommandError
 
 def find_project_root():
-    """Find the project root by looking for .ctx.config file"""
+    """Find the project root by looking for ctx.config file"""
     current_dir = Path.cwd()
     
     # Search upward from current directory (with reasonable limits)
@@ -22,20 +22,37 @@ def find_project_root():
         if depth > max_depth:
             break
             
-        config_file = parent / '.ctx.config'
+        config_file = parent / 'ctx.config'
         if config_file.exists():
             return parent
     
     return current_dir  # Default to current directory if no config found
 
 def get_ctx_config_path():
-    """Get the path to the .ctx.config file"""
+    """Get the path to the ctx.config file"""
     project_root = find_project_root()
-    return project_root / '.ctx.config'
+    return project_root / 'ctx.config'
+
+def ensure_ctx_config():
+    """Ensure the ctx.config file exists, creating it if necessary"""
+    # Use current directory as project root for initial creation
+    config_path = Path.cwd() / 'ctx.config'
+    
+    if not config_path.exists():
+        # Create default config (omit active_ctx if None to avoid TOML serialization issues)
+        default_config = {
+            'discovered_ctx': []
+        }
+        try:
+            with open(config_path, 'wb') as f:
+                tomli_w.dump(default_config, f)
+            click.echo(f"✓ Created ctx.config at {str(config_path)}")
+        except Exception as e:
+            click.echo(f"Warning: Could not create ctx.config: {e}", err=True)
 
 def load_ctx_config():
-    """Load the ctx configuration from .ctx.config file"""
-    config_path = get_ctx_config_path()
+    """Load the ctx configuration from ctx.config file"""
+    config_path = Path.cwd() / 'ctx.config'
     
     if not config_path.exists():
         return {
@@ -57,7 +74,7 @@ def load_ctx_config():
         }
 
 def save_ctx_config(config):
-    """Save the ctx configuration to .ctx.config file"""
+    """Save the ctx configuration to ctx.config file"""
     config_path = get_ctx_config_path()
     
     try:
@@ -68,14 +85,29 @@ def save_ctx_config(config):
 
 def add_ctx_to_config(ctx_path, set_as_active=True):
     """Add a ctx directory to the config and optionally set as active"""
-    config = load_ctx_config()
+    # Simple approach: work directly with the config file
+    config_path = Path.cwd() / 'ctx.config'
     
-    # Convert to relative path from project root
-    project_root = find_project_root()
+    # Load existing config or create empty one
+    if config_path.exists():
+        try:
+            with open(config_path, 'rb') as f:
+                config = tomllib.load(f)
+        except Exception:
+            config = {}
+    else:
+        config = {}
+    
+    # Ensure required keys exist
+    if 'discovered_ctx' not in config:
+        config['discovered_ctx'] = []
+    
+    # Convert to relative path from current directory
+    ctx_path = Path(ctx_path)
     try:
-        relative_path = str(ctx_path.relative_to(project_root))
+        relative_path = str(ctx_path.relative_to(Path.cwd()))
     except ValueError:
-        relative_path = str(ctx_path.absolute())
+        relative_path = str(ctx_path.name)  # Just use the directory name
     
     # Add to discovered list if not already there
     if relative_path not in config['discovered_ctx']:
@@ -85,7 +117,12 @@ def add_ctx_to_config(ctx_path, set_as_active=True):
     if set_as_active:
         config['active_ctx'] = relative_path
     
-    save_ctx_config(config)
+    # Save config
+    try:
+        with open(config_path, 'wb') as f:
+            tomli_w.dump(config, f)
+    except Exception as e:
+        click.echo(f"Warning: Could not save config: {e}", err=True)
 
 def find_ctx_root():
     """Find the active ctx repository from config"""
@@ -94,8 +131,8 @@ def find_ctx_root():
     if not config['active_ctx']:
         return None
     
-    project_root = find_project_root()
-    ctx_path = project_root / config['active_ctx']
+    # Use current directory as project root
+    ctx_path = Path.cwd() / config['active_ctx']
     
     # Verify it still exists and has .ctx marker
     if ctx_path.exists() and (ctx_path / '.ctx').exists():
@@ -262,6 +299,9 @@ def new(directory, custom_dir):
         ctx new my-research        # Creates 'my-research' directory
         ctx new --dir ideas        # Creates 'ideas' directory
     """
+    # Ensure ctx.config exists first
+    ensure_ctx_config()
+    
     # Use custom_dir if provided, otherwise use directory argument
     target_dir = custom_dir if custom_dir else directory
     ctx_dir = Path(target_dir)
@@ -472,12 +512,11 @@ def list():
         click.echo("Run 'ctx new' to create a new ctx repository.")
         return
     
-    project_root = find_project_root()
     click.echo("Discovered ctx repositories:")
     click.echo("=" * 50)
     
     for ctx_path in config['discovered_ctx']:
-        full_path = project_root / ctx_path
+        full_path = Path.cwd() / ctx_path
         is_active = ctx_path == config['active_ctx']
         exists = full_path.exists() and (full_path / '.ctx').exists()
         
@@ -505,18 +544,22 @@ def switch(ctx_name):
         sys.exit(1)
     
     # Verify the repository still exists
-    project_root = find_project_root()
-    ctx_path = project_root / ctx_name
+    ctx_path = Path.cwd() / ctx_name
     
     if not ctx_path.exists() or not (ctx_path / '.ctx').exists():
         click.echo(f"Error: ctx repository '{ctx_name}' directory is missing or invalid", err=True)
         sys.exit(1)
     
-    # Switch to the new active repository
+    # Switch to the new active repository - update config directly
     config['active_ctx'] = ctx_name
-    save_ctx_config(config)
-    
-    click.echo(f"✓ Switched to ctx repository: {ctx_name}")
+    config_path = Path.cwd() / 'ctx.config'
+    try:
+        with open(config_path, 'wb') as f:
+            tomli_w.dump(config, f)
+        click.echo(f"✓ Switched to ctx repository: {ctx_name}")
+    except Exception as e:
+        click.echo(f"Error saving config: {e}", err=True)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
