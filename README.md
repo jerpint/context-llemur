@@ -50,7 +50,7 @@ ctx integrate "machine-learning-bias"
 ## Core Commands
 
 ### Repository Management
-- `ctx new [name]` - Create new context repository (default: ./ctx/)
+- `ctx new [name]` - Create new context repository (default: ./context/)
 - `ctx status` - Show current repository status
 - `ctx list` - List all discovered context repositories
 - `ctx switch <name>` - Switch to a different context repository

@@ -289,13 +289,13 @@ def main():
     pass
 
 @main.command()
-@click.argument('directory', required=False, default='ctx')
+@click.argument('directory', required=False, default='context')
 @click.option('--dir', 'custom_dir', help='Custom directory name (alternative to positional argument)')
 def new(directory, custom_dir):
     """Create a new ctx repository
     
     Examples:
-        ctx new                    # Creates 'ctx' directory
+        ctx new                    # Creates 'context' directory
         ctx new my-research        # Creates 'my-research' directory
         ctx new --dir ideas        # Creates 'ideas' directory
     """
@@ -369,7 +369,7 @@ def init():
     # Call the new command with default directory
     from click.testing import CliRunner
     runner = CliRunner()
-    result = runner.invoke(new, ['ctx'])
+    result = runner.invoke(new, ['context'])
     if result.exit_code != 0:
         sys.exit(result.exit_code)
 

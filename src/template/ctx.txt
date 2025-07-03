@@ -22,7 +22,7 @@ ctx works like git, but for thoughts and ideas instead of code:
 
 ### Repository Management
 ```bash
-ctx new                     # Create new ctx repository in 'ctx' directory
+ctx new                     # Create new ctx repository in 'context' directory
 ctx new <directory>         # Create new ctx repository in custom directory  
 ctx new --dir <directory>   # Alternative syntax for custom directory
 ctx status                  # Show current branch and repository status
