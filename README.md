@@ -24,8 +24,8 @@ uv pip install -e .
 ## Quick Start
 
 ```bash
-# Initialize a new context repository
-ctx init
+# Create a new context repository
+ctx new research                  # Creates ./research/ directory
 
 # Start exploring a new idea
 ctx explore "machine-learning-bias"
@@ -49,10 +49,37 @@ ctx integrate "machine-learning-bias"
 
 ## Core Commands
 
-- `ctx init` - Initialize new context repository
+### Repository Management
+- `ctx new [name]` - Create new context repository (default: ./ctx/)
+- `ctx status` - Show current repository status
+- `ctx list` - List all discovered context repositories
+- `ctx switch <name>` - Switch to a different context repository
+
+### Exploration & Integration
 - `ctx explore <topic>` - Start exploring a new topic (creates branch)
 - `ctx capture <message>` - Capture current insights (commits changes)
 - `ctx integrate <exploration>` - Merge insights back to main context
-- `ctx status` - Show current repository status
+- `ctx integrate <exploration> --preview` - Preview integration without executing
+
+## Repository Discovery
+
+ctx uses a simple config-based approach for managing multiple context repositories:
+
+- **`.ctx.config`**: TOML file at your project root tracks active and discovered repositories
+- **`.ctx` marker**: Empty file in each context repository for identification
+- **Auto-discovery**: `ctx new` automatically registers new repositories
+- **Seamless workflow**: Run `ctx new research` from project root, then `ctx status` works immediately
+
+Example `.ctx.config`:
+```toml
+active_ctx = "research"
+discovered_ctx = ["ctx", "research", "experiments"]
+```
+
+This design allows you to:
+- Create multiple context repositories in the same workspace
+- Switch between them easily with `ctx switch <name>`
+- Work from your project root without changing directories
+- Keep repositories portable and git-friendly
 
 ---

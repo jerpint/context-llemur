@@ -22,8 +22,12 @@ ctx works like git, but for thoughts and ideas instead of code:
 
 ### Repository Management
 ```bash
-ctx init                    # Initialize a new ctx repository
+ctx new                     # Create new ctx repository in 'ctx' directory
+ctx new <directory>         # Create new ctx repository in custom directory  
+ctx new --dir <directory>   # Alternative syntax for custom directory
 ctx status                  # Show current branch and repository status
+ctx list                    # List all discovered ctx repositories with status
+ctx switch <name>           # Switch to a different ctx repository
 ```
 
 ### Exploring Ideas
@@ -33,7 +37,6 @@ ctx explore <topic>         # Start exploring a new topic or idea
 ctx capture "<message>"     # Capture current insights and thinking
                            # Git equivalent: git add . && git commit -m "<message>"
 ```
-
 
 ### Integrating Insights
 ```bash
@@ -47,8 +50,9 @@ ctx integrate <exploration> --target <branch> # Integrate into specific target b
 
 ### Starting a New Project
 ```bash
-ctx init                    # Initialize repository
-# Edit ctx/ctx.txt and ctx/goals.txt with your context
+ctx new my-research         # Create repository in 'my-research' directory
+cd my-research              # Navigate to the repository
+# Edit ctx.txt and goals.txt with your context
 ctx explore "bias-detection-methods" # Start exploring a new topic
 # Work on your ideas, document insights
 ctx capture "identified key bias sources in training data"
@@ -65,7 +69,21 @@ ctx capture "discovered performance bottleneck in current approach"
 ctx integrate "alternative-approach" --preview # Review before integrating
 ```
 
+### Multiple Context Repositories
+```bash
+ctx new ideas               # Create 'ideas' directory
+ctx new --dir research      # Create 'research' directory
+ctx new work-projects       # Create 'work-projects' directory
+# Each directory is a separate ctx repository
+```
+
 ## Conventions
+
+### Repository Structure
+- Each ctx repository is identified by a `.ctx` marker file
+- Repositories can be named anything (e.g., 'research', 'ideas', 'work-context')
+- Multiple ctx repositories can coexist in the same workspace
+- Commands work from any subdirectory within a ctx repository
 
 ### Branch Naming
 - Use descriptive names: `bias-detection-approach`, `performance-optimization`
@@ -88,8 +106,25 @@ ctx integrate "alternative-approach" --preview # Review before integrating
 
 ## Technical Notes
 - ctx repositories are standard git repositories with additional tooling
-- All git commands work normally within the ctx/ directory
+- All git commands work normally within the ctx repository directory
 - Files are stored as plain text for maximum compatibility
-- Repository state travels with the ctx/ directory
+- Repository state travels with the ctx directory
+- The `.ctx` marker file identifies ctx repositories
+- A `.ctx.config` file tracks active and discovered ctx repositories
+
+### Simple Configuration Management
+ctx uses a simple TOML configuration file (`.ctx.config`) at your project root:
+- **Active repository**: The currently selected ctx repository
+- **Discovered repositories**: All known ctx repositories in your project
+- **Automatic updates**: When you create a new ctx repository, it becomes the active one
+- **Manual switching**: Use `ctx list` to see all repositories and their status
+
+Example `.ctx.config`:
+```toml
+active_ctx = "research"
+discovered_ctx = ["ctx", "research", "experiments"]
+```
+
+This means you can run `ctx new` from your project root and immediately use `ctx status` without changing directories.
 
 This file (ctx.txt) provides global context and should not be modified during normal usage.

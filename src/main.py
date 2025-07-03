@@ -5,16 +5,112 @@ import os
 from pathlib import Path
 import sys
 import shutil
+import tomllib
+import tomli_w
 from git import Repo, InvalidGitRepositoryError, GitCommandError
+
+def find_project_root():
+    """Find the project root by looking for .ctx.config file"""
+    current_dir = Path.cwd()
+    
+    # Search upward from current directory (with reasonable limits)
+    max_depth = 10
+    depth = 0
+    
+    for parent in [current_dir] + list(current_dir.parents):
+        depth += 1
+        if depth > max_depth:
+            break
+            
+        config_file = parent / '.ctx.config'
+        if config_file.exists():
+            return parent
+    
+    return current_dir  # Default to current directory if no config found
+
+def get_ctx_config_path():
+    """Get the path to the .ctx.config file"""
+    project_root = find_project_root()
+    return project_root / '.ctx.config'
+
+def load_ctx_config():
+    """Load the ctx configuration from .ctx.config file"""
+    config_path = get_ctx_config_path()
+    
+    if not config_path.exists():
+        return {
+            'active_ctx': None,
+            'discovered_ctx': []
+        }
+    
+    try:
+        with open(config_path, 'rb') as f:
+            config = tomllib.load(f)
+            return {
+                'active_ctx': config.get('active_ctx'),
+                'discovered_ctx': config.get('discovered_ctx', [])
+            }
+    except Exception:
+        return {
+            'active_ctx': None,
+            'discovered_ctx': []
+        }
+
+def save_ctx_config(config):
+    """Save the ctx configuration to .ctx.config file"""
+    config_path = get_ctx_config_path()
+    
+    try:
+        with open(config_path, 'wb') as f:
+            tomli_w.dump(config, f)
+    except Exception as e:
+        click.echo(f"Warning: Could not save config: {e}", err=True)
+
+def add_ctx_to_config(ctx_path, set_as_active=True):
+    """Add a ctx directory to the config and optionally set as active"""
+    config = load_ctx_config()
+    
+    # Convert to relative path from project root
+    project_root = find_project_root()
+    try:
+        relative_path = str(ctx_path.relative_to(project_root))
+    except ValueError:
+        relative_path = str(ctx_path.absolute())
+    
+    # Add to discovered list if not already there
+    if relative_path not in config['discovered_ctx']:
+        config['discovered_ctx'].append(relative_path)
+    
+    # Set as active if requested
+    if set_as_active:
+        config['active_ctx'] = relative_path
+    
+    save_ctx_config(config)
+
+def find_ctx_root():
+    """Find the active ctx repository from config"""
+    config = load_ctx_config()
+    
+    if not config['active_ctx']:
+        return None
+    
+    project_root = find_project_root()
+    ctx_path = project_root / config['active_ctx']
+    
+    # Verify it still exists and has .ctx marker
+    if ctx_path.exists() and (ctx_path / '.ctx').exists():
+        return ctx_path
+    
+    return None
 
 def get_ctx_dir():
     """Get the ctx directory path"""
-    return Path('ctx')
+    return find_ctx_root()
 
 def get_ctx_repo():
     """Get the GitPython repo object for the ctx directory"""
     ctx_dir = get_ctx_dir()
-    if not ctx_dir.exists():
+    if not ctx_dir:
         return None
     try:
         return Repo(ctx_dir)
@@ -22,13 +118,13 @@ def get_ctx_repo():
         return None
 
 def is_ctx_repo():
-    """Check if current directory is a ctx repository"""
-    return get_ctx_repo() is not None
+    """Check if we're in or under a ctx repository"""
+    return get_ctx_dir() is not None
 
 def ensure_ctx_repo():
     """Ensure we're in a ctx repository"""
     if not is_ctx_repo():
-        click.echo("Error: Not in a ctx repository. Run 'ctx init' first.", err=True)
+        click.echo("Error: Not in a ctx repository. Run 'ctx new' first.", err=True)
         sys.exit(1)
 
 def get_template_dir():
@@ -156,15 +252,26 @@ def main():
     pass
 
 @main.command()
-def init():
-    """Initialize a new ctx repository"""
-    if Path('ctx').exists():
-        click.echo("Error: ctx directory already exists", err=True)
+@click.argument('directory', required=False, default='ctx')
+@click.option('--dir', 'custom_dir', help='Custom directory name (alternative to positional argument)')
+def new(directory, custom_dir):
+    """Create a new ctx repository
+    
+    Examples:
+        ctx new                    # Creates 'ctx' directory
+        ctx new my-research        # Creates 'my-research' directory
+        ctx new --dir ideas        # Creates 'ideas' directory
+    """
+    # Use custom_dir if provided, otherwise use directory argument
+    target_dir = custom_dir if custom_dir else directory
+    ctx_dir = Path(target_dir)
+    
+    if ctx_dir.exists():
+        click.echo(f"Error: Directory '{target_dir}' already exists", err=True)
         sys.exit(1)
     
-    # Create ctx directory
-    ctx_dir = Path('ctx')
-    ctx_dir.mkdir()
+    # Create directory
+    ctx_dir.mkdir(parents=True)
 
     # Copy template files
     template_dir = get_template_dir()
@@ -172,7 +279,7 @@ def init():
         click.echo(f"Error: Template directory not found at {template_dir}", err=True)
         sys.exit(1)
     
-    click.echo("Creating ctx directory and copying template files...")
+    click.echo(f"Creating '{target_dir}' directory and copying template files...")
     
     # Copy all files from template directory
     for template_file in template_dir.glob('*'):
@@ -181,28 +288,50 @@ def init():
             shutil.copy2(template_file, dest_file)
             click.echo(f"Copied {template_file.name}")
     
-    click.echo("Initializing ctx repository...")
+    # Create .ctx marker file
+    ctx_marker = ctx_dir / '.ctx'
+    ctx_marker.touch()
+    click.echo("Created .ctx marker file")
+    
+    click.echo(f"Initializing git repository in '{target_dir}'...")
 
-    # Initialize the git repo in the ctx directory
+    # Initialize the git repo in the directory
     try:
         repo = Repo.init(ctx_dir)
         
-        # Add all files to git
+        # Add all files to git (including .ctx marker)
         repo.git.add('-A')
         
         # Commit the initial files
         repo.index.commit('first commit')
         
-        click.echo(f"✓ ctx repository initialized successfully in {ctx_dir}")
-        click.echo(f"✓ Files committed with 'first commit' message in {ctx_dir}")
+        click.echo(f"✓ ctx repository initialized successfully in '{target_dir}'")
+        click.echo(f"✓ Files committed with 'first commit' message")
+        
+        # Add to config as the active ctx repository
+        add_ctx_to_config(ctx_dir.absolute(), set_as_active=True)
+        click.echo(f"✓ Added '{target_dir}' to ctx config as active repository")
+        
         click.echo("")
         click.echo("Next steps:")
-        click.echo(f"1. Edit {ctx_dir}/ctx.txt with your context")
-        click.echo("2. Start exploring ideas on feature branches!")
+        click.echo(f"1. cd {target_dir}")
+        click.echo(f"2. Edit ctx.txt with your context")
+        click.echo("3. Start exploring ideas on feature branches!")
         
     except Exception as e:
         click.echo(f"Error initializing git repository: {e}", err=True)
         sys.exit(1)
+
+@main.command()
+def init():
+    """Initialize a new ctx repository (deprecated - use 'ctx new' instead)"""
+    click.echo("Warning: 'ctx init' is deprecated. Use 'ctx new' instead.", err=True)
+    # Call the new command with default directory
+    from click.testing import CliRunner
+    runner = CliRunner()
+    result = runner.invoke(new, ['ctx'])
+    if result.exit_code != 0:
+        sys.exit(result.exit_code)
 
 @main.command()
 @click.argument('exploration')
@@ -253,6 +382,10 @@ def status():
     """Show current ctx repository status"""
     ensure_ctx_repo()
     
+    ctx_dir = get_ctx_dir()
+    if ctx_dir:
+        click.echo(f"ctx repository: {ctx_dir.name} ({ctx_dir.absolute()})")
+    
     current_branch = get_current_branch()
     all_branches = get_all_branches()
     
@@ -272,8 +405,6 @@ def status():
                 click.echo("\nWorking tree clean")
         except:
             click.echo("\nCould not get repository status")
-
-
 
 @main.command()
 @click.argument('topic')
@@ -330,6 +461,62 @@ def capture(message):
     except Exception as e:
         click.echo(f"Error capturing insights: {e}", err=True)
         sys.exit(1)
+
+@main.command()
+def list():
+    """List all discovered ctx repositories"""
+    config = load_ctx_config()
+    
+    if not config['discovered_ctx']:
+        click.echo("No ctx repositories found in config.")
+        click.echo("Run 'ctx new' to create a new ctx repository.")
+        return
+    
+    project_root = find_project_root()
+    click.echo("Discovered ctx repositories:")
+    click.echo("=" * 50)
+    
+    for ctx_path in config['discovered_ctx']:
+        full_path = project_root / ctx_path
+        is_active = ctx_path == config['active_ctx']
+        exists = full_path.exists() and (full_path / '.ctx').exists()
+        
+        marker = "→ " if is_active else "  "
+        status = "✓" if exists else "✗"
+        
+        click.echo(f"{marker}{status} {ctx_path}")
+        if is_active:
+            click.echo("     (Currently active)")
+        if not exists:
+            click.echo("     (Directory missing or invalid)")
+        click.echo()
+
+@main.command()
+@click.argument('ctx_name')
+def switch(ctx_name):
+    """Switch to a different ctx repository"""
+    config = load_ctx_config()
+    
+    if ctx_name not in config['discovered_ctx']:
+        click.echo(f"Error: ctx repository '{ctx_name}' not found in config", err=True)
+        click.echo("Available repositories:")
+        for repo in config['discovered_ctx']:
+            click.echo(f"  • {repo}")
+        sys.exit(1)
+    
+    # Verify the repository still exists
+    project_root = find_project_root()
+    ctx_path = project_root / ctx_name
+    
+    if not ctx_path.exists() or not (ctx_path / '.ctx').exists():
+        click.echo(f"Error: ctx repository '{ctx_name}' directory is missing or invalid", err=True)
+        sys.exit(1)
+    
+    # Switch to the new active repository
+    config['active_ctx'] = ctx_name
+    save_ctx_config(config)
+    
+    click.echo(f"✓ Switched to ctx repository: {ctx_name}")
 
 if __name__ == "__main__":
     main()
