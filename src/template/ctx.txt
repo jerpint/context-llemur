@@ -26,11 +26,12 @@ ctx new                     # Create new ctx repository in 'context' directory
 ctx new <directory>         # Create new ctx repository in custom directory  
 ctx new --dir <directory>   # Alternative syntax for custom directory
 ctx status                  # Show current branch and repository status
+                           # Git equivalent: git status && git branch
 ctx list                    # List all discovered ctx repositories with status
 ctx switch <name>           # Switch to a different ctx repository
 ```
 
-### Exploring Ideas
+### Exploring Ideas (Branching)
 ```bash
 ctx explore <topic>         # Start exploring a new topic or idea
                            # Git equivalent: git checkout -b <topic>
@@ -38,13 +39,25 @@ ctx capture "<message>"     # Capture current insights and thinking
                            # Git equivalent: git add . && git commit -m "<message>"
 ```
 
-### Integrating Insights
+### Integrating Insights (Merging)
 ```bash
 ctx integrate <exploration>  # Integrate insights from an exploration
                             # Git equivalent: git merge <exploration>
 ctx integrate <exploration> --preview # Preview what would be integrated
+                            # Git equivalent: git merge <exploration> --no-commit
 ctx integrate <exploration> --target <branch> # Integrate into specific target branch
+                            # Git equivalent: git checkout <branch> && git merge <exploration>
 ```
+
+## Git Command Mapping
+For users familiar with git, here's the direct mapping:
+
+| ctx Command | Git Equivalent | Purpose |
+|-------------|----------------|---------|
+| `ctx explore <topic>` | `git checkout -b <topic>` | Create and switch to new branch |
+| `ctx capture "<message>"` | `git add . && git commit -m "<message>"` | Stage and commit changes |
+| `ctx integrate <branch>` | `git merge <branch>` | Merge branch into current |
+| `ctx status` | `git status && git branch` | Show repo and branch status |
 
 ## Workflow Examples
 
@@ -53,17 +66,17 @@ ctx integrate <exploration> --target <branch> # Integrate into specific target b
 ctx new my-research         # Create repository in 'my-research' directory
 cd my-research              # Navigate to the repository
 # Edit ctx.txt and goals.txt with your context
-ctx explore "bias-detection-methods" # Start exploring a new topic
+ctx explore "bias-detection-methods" # git checkout -b bias-detection-methods
 # Work on your ideas, document insights
-ctx capture "identified key bias sources in training data"
-ctx integrate "bias-detection-methods" --preview # See what would be integrated
-ctx integrate "bias-detection-methods"  # Integrate successful insights back
+ctx capture "identified key bias sources in training data" # git add . && git commit -m "..."
+ctx integrate "bias-detection-methods" --preview # Preview merge
+ctx integrate "bias-detection-methods"  # git merge bias-detection-methods
 ```
 
 ### Collaborative Thinking
 ```bash
-ctx status                  # See current state
-ctx explore "alternative-approach" # Start exploring different direction  
+ctx status                  # Check current state (git status && git branch)
+ctx explore "alternative-approach" # Create new exploration branch
 # Document findings and insights
 ctx capture "discovered performance bottleneck in current approach"
 ctx integrate "alternative-approach" --preview # Review before integrating
@@ -110,19 +123,19 @@ ctx new work-projects       # Create 'work-projects' directory
 - Files are stored as plain text for maximum compatibility
 - Repository state travels with the ctx directory
 - The `.ctx` marker file identifies ctx repositories
-- A `.ctx.config` file tracks active and discovered ctx repositories
+- A `ctx.config` file tracks active and discovered ctx repositories
 
 ### Simple Configuration Management
-ctx uses a simple TOML configuration file (`.ctx.config`) at your project root:
+ctx uses a simple TOML configuration file (`ctx.config`) at your project root:
 - **Active repository**: The currently selected ctx repository
 - **Discovered repositories**: All known ctx repositories in your project
 - **Automatic updates**: When you create a new ctx repository, it becomes the active one
 - **Manual switching**: Use `ctx list` to see all repositories and their status
 
-Example `.ctx.config`:
+Example `ctx.config`:
 ```toml
 active_ctx = "research"
-discovered_ctx = ["ctx", "research", "experiments"]
+discovered_ctx = ["context", "research", "experiments"]
 ```
 
 This means you can run `ctx new` from your project root and immediately use `ctx status` without changing directories.
