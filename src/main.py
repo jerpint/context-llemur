@@ -561,5 +561,70 @@ def switch(ctx_name):
         click.echo(f"Error saving config: {e}", err=True)
         sys.exit(1)
 
+@main.command()
+@click.option('--staged', is_flag=True, help='Show staged changes')
+@click.argument('branches', nargs=-1)
+def diff(staged, branches):
+    """Show git diff output for the ctx repository
+    
+    Examples:
+        ctx diff                    # Show unstaged changes
+        ctx diff --staged          # Show staged changes  
+        ctx diff main              # Show changes vs main branch
+        ctx diff main develop      # Show diff between two branches
+    """
+    ensure_ctx_repo()
+    
+    repo = get_ctx_repo()
+    if not repo:
+        click.echo("Error: No ctx repository found", err=True)
+        sys.exit(1)
+    
+    try:
+        # Build git diff command based on options and arguments
+        diff_args = []
+        
+        if staged:
+            diff_args.append('--staged')
+        
+        # Handle branch arguments
+        if len(branches) == 1:
+            # Compare current branch with specified branch
+            diff_args.append(branches[0])
+        elif len(branches) == 2:
+            # Compare two specified branches
+            diff_args.append(f'{branches[0]}...{branches[1]}')
+        elif len(branches) > 2:
+            click.echo("Error: Too many branch arguments. Use 0, 1, or 2 branches.", err=True)
+            sys.exit(1)
+        
+        # Get diff output
+        diff_output = repo.git.diff(*diff_args)
+        
+        if not diff_output.strip():
+            if staged:
+                click.echo("No staged changes.")
+            elif branches:
+                if len(branches) == 1:
+                    click.echo(f"No changes between current branch and {branches[0]}.")
+                else:
+                    click.echo(f"No changes between {branches[0]} and {branches[1]}.")
+            else:
+                click.echo("No unstaged changes.")
+        else:
+            click.echo(diff_output)
+            
+    except GitCommandError as e:
+        if "unknown revision" in str(e).lower():
+            click.echo(f"Error: Unknown branch or revision specified", err=True)
+            all_branches = get_all_branches()
+            click.echo(f"Available branches: {', '.join(all_branches)}")
+        else:
+            click.echo(f"Error getting diff: {e}", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"Error getting diff: {e}", err=True)
+        sys.exit(1)
+
 if __name__ == "__main__":
     main()
