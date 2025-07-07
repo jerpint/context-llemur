@@ -14,6 +14,7 @@ authors = [
 ]
 dependencies = [
     "click>=8.0.0",
+    "fastmcp>=2.10.2",
     "gitpython>=3.1.0",
     "tomli_w>=1.0.0",
 ]
