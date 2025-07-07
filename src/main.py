@@ -2,7 +2,7 @@
 
 import click
 import sys
-from .ctx_core import CtxCore
+from src.ctx_core import CtxCore
 
 # Initialize the core logic
 ctx_core = CtxCore()
@@ -249,6 +249,29 @@ def diff(staged, branches):
             click.echo("No unstaged changes.")
     else:
         click.echo(diff_data['diff'])
+
+@main.command()
+def mcp():
+    """Start the MCP server for AI agent integration
+    
+    This starts the Model Context Protocol server that allows AI agents
+    to connect and use ctx as persistent, version-controlled memory.
+    """
+    try:
+        from .mcp_server import run_server
+        click.echo("🚀 Starting ctx MCP server...")
+        click.echo("   AI agents can now connect to use ctx as persistent memory")
+        click.echo("   Press Ctrl+C to stop the server")
+        run_server()
+    except KeyboardInterrupt:
+        click.echo("\n👋 MCP server stopped")
+    except ImportError as e:
+        click.echo(f"❌ Error importing MCP server: {e}", err=True)
+        click.echo("   Make sure fastMCP is installed: pip install fastmcp", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"❌ Error starting MCP server: {e}", err=True)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
