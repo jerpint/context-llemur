@@ -504,7 +504,7 @@ class CtxCore:
         
         return OperationResult(True, f"Switched to ctx repository: {ctx_name}", data={'repository': ctx_name})
     
-    def get_diff(self, staged: bool = False, branches: List[str] = None) -> OperationResult:
+    def get_diff(self, staged: bool = False, branches: Optional[List[str]] = None) -> OperationResult:
         """Get git diff output for the ctx repository"""
         if not self.is_ctx_repo():
             return OperationResult(False, error="Not in a ctx repository")
