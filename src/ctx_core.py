@@ -9,6 +9,7 @@ from git import Repo, InvalidGitRepositoryError, GitCommandError
 from dataclasses import dataclass
 from typing import Optional, List, Dict, Any, Union
 from enum import Enum
+import fnmatch
 
 class OperationResult:
     """Base class for operation results"""
@@ -46,6 +47,15 @@ class MergePreview:
     conflicts: List[Dict[str, str]]
     has_conflicts: bool
     is_clean: bool
+
+@dataclass
+class ShowAllResult:
+    """Result of show_all operation"""
+    files: List[Dict[str, Any]]
+    total_files: int
+    directory: Optional[str]
+    branch: str
+    pattern: Optional[str]
 
 class CtxCore:
     """Core business logic for ctx operations"""
@@ -558,4 +568,125 @@ class CtxCore:
             else:
                 return OperationResult(False, error=f"Error getting diff: {e}")
         except Exception as e:
-            return OperationResult(False, error=f"Error getting diff: {e}") 
+            return OperationResult(False, error=f"Error getting diff: {e}")
+
+    def show_all(self, directory: Optional[str] = None, branch: Optional[str] = None, pattern: Optional[str] = None) -> OperationResult:
+        """Display all file contents with clear delimiters for LLM context absorption
+        
+        Args:
+            directory: Optional directory to show (relative to ctx root)
+            branch: Optional branch to show files from (default: current branch)
+            pattern: Optional file pattern to filter (e.g., "*.md")
+        
+        Returns:
+            OperationResult with file contents and metadata
+        """
+        if not self.is_ctx_repo():
+            return OperationResult(False, error="Not in a ctx repository")
+        
+        repo = self.get_ctx_repo()
+        if not repo:
+            return OperationResult(False, error="No ctx repository found")
+            
+        # Determine the branch to use
+        if branch is None:
+            branch = self.get_current_branch()
+        
+        # Validate branch exists
+        all_branches = self.get_all_branches()
+        if branch not in all_branches:
+            return OperationResult(False, error=f"Branch '{branch}' does not exist")
+        
+        ctx_root = self.find_ctx_root()
+        if not ctx_root:
+            return OperationResult(False, error="Could not find ctx root")
+        
+        # Determine the directory to scan
+        if directory:
+            target_dir = ctx_root / directory
+            if not target_dir.exists():
+                return OperationResult(False, error=f"Directory '{directory}' does not exist")
+            if not target_dir.is_dir():
+                return OperationResult(False, error=f"'{directory}' is not a directory")
+            scan_path = directory
+        else:
+            target_dir = ctx_root
+            scan_path = "."
+        
+        try:
+            # Get all files in the target directory (recursively)
+            all_files = []
+            
+            def collect_files(path: Path, relative_base: str = ""):
+                """Recursively collect all files"""
+                for item in path.iterdir():
+                    if item.is_file():
+                        # Skip git files and hidden files
+                        if item.name.startswith('.'):
+                            continue
+                        
+                        # Build relative path from ctx root
+                        if relative_base:
+                            rel_path = f"{relative_base}/{item.name}"
+                        else:
+                            rel_path = item.name
+                        
+                        # Apply pattern filter if specified
+                        if pattern and not fnmatch.fnmatch(item.name, pattern):
+                            continue
+                        
+                        all_files.append((rel_path, item))
+                    elif item.is_dir() and not item.name.startswith('.'):
+                        # Recursively scan subdirectories
+                        new_base = f"{relative_base}/{item.name}" if relative_base else item.name
+                        collect_files(item, new_base)
+            
+            collect_files(target_dir, scan_path if scan_path != "." else "")
+            
+            # Sort files for consistent output
+            all_files.sort(key=lambda x: x[0])
+            
+            # Read file contents
+            file_contents = []
+            for rel_path, file_path in all_files:
+                try:
+                    # Try to get content from the specified branch
+                    if branch != self.get_current_branch():
+                        # Use git to get file content from specific branch
+                        content = self.get_file_content_at_branch(rel_path, branch)
+                        if content is None:
+                            # File might not exist in that branch
+                            continue
+                    else:
+                        # Read from working directory
+                        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                            content = f.read()
+                    
+                    file_contents.append({
+                        'path': rel_path,
+                        'content': content,
+                        'size': len(content),
+                        'lines': content.count('\n') + 1 if content else 0
+                    })
+                    
+                except Exception as e:
+                    # Skip files that can't be read (binary files, etc.)
+                    file_contents.append({
+                        'path': rel_path,
+                        'content': f"[ERROR: Could not read file - {e}]",
+                        'size': 0,
+                        'lines': 0
+                    })
+            
+            result = ShowAllResult(
+                files=file_contents,
+                total_files=len(file_contents),
+                directory=directory,
+                branch=branch,
+                pattern=pattern
+            )
+            
+            return OperationResult(True, "Files retrieved successfully", data=result)
+            
+        except Exception as e:
+            return OperationResult(False, error=f"Error reading files: {e}") 

@@ -206,26 +206,73 @@ def switch(ctx_name):
     result = ctx_core.switch_repository(ctx_name)
     
     if result.success:
-        click.echo(f"✓ Switched to ctx repository: {ctx_name}")
+        click.echo(f"✓ {result.message}")
     else:
+        available = result.data.get('available_repositories', []) if result.data else []
         click.echo(f"Error: {result.error}", err=True)
-        if result.data and 'available_repositories' in result.data:
-            click.echo("Available repositories:")
-            for repo in result.data['available_repositories']:
-                click.echo(f"  • {repo}")
+        if available:
+            click.echo(f"Available repositories: {', '.join(available)}")
         sys.exit(1)
+
+@main.command()
+@click.argument('directory', required=False)
+@click.option('--branch', help='Branch to show files from (default: current branch)')
+@click.option('--pattern', help='File pattern to filter (e.g., "*.md")')
+def show_all(directory, branch, pattern):
+    """Display all file contents with clear delimiters
+    
+    Perfect for LLM context absorption - shows entire repository state in one command.
+    
+    Examples:
+        ctx show_all                    # Show all files in current branch
+        ctx show_all --pattern "*.md"   # Show only markdown files
+        ctx show_all docs --branch main # Show files in 'docs' directory from main branch
+    """
+    result = ctx_core.show_all(directory=directory, branch=branch, pattern=pattern)
+    
+    if not result.success:
+        click.echo(f"Error: {result.error}", err=True)
+        sys.exit(1)
+    
+    show_result = result.data
+    
+    # Print header information
+    click.echo("=" * 80)
+    click.echo("📁 CTX REPOSITORY CONTENTS")
+    click.echo("=" * 80)
+    click.echo(f"Branch: {show_result.branch}")
+    if show_result.directory:
+        click.echo(f"Directory: {show_result.directory}")
+    if show_result.pattern:
+        click.echo(f"Pattern: {show_result.pattern}")
+    click.echo(f"Total files: {show_result.total_files}")
+    click.echo()
+    
+    # Print each file with clear delimiters
+    for i, file_info in enumerate(show_result.files):
+        click.echo(f"{'=' * 80}")
+        click.echo(f"📄 FILE {i+1}/{show_result.total_files}: {file_info['path']}")
+        click.echo(f"📊 Size: {file_info['size']} chars, Lines: {file_info['lines']}")
+        click.echo(f"{'=' * 80}")
+        click.echo()
+        click.echo(file_info['content'])
+        click.echo()
+    
+    click.echo("=" * 80)
+    click.echo("✅ REPOSITORY CONTENTS COMPLETE")
+    click.echo("=" * 80)
 
 @main.command()
 @click.option('--staged', is_flag=True, help='Show staged changes')
 @click.argument('branches', nargs=-1)
 def diff(staged, branches):
-    """Show git diff output for the ctx repository
+    """Show git diff equivalent for the ctx repository
     
     Examples:
-        ctx diff                    # Show unstaged changes
-        ctx diff --staged          # Show staged changes  
-        ctx diff main              # Show changes vs main branch
-        ctx diff main develop      # Show diff between two branches
+        ctx diff                      # Show current changes
+        ctx diff --staged             # Show staged changes
+        ctx diff main                 # Show changes vs main branch
+        ctx diff feature-branch main  # Show changes between two branches
     """
     result = ctx_core.get_diff(staged=staged, branches=list(branches))
     
@@ -238,17 +285,22 @@ def diff(staged, branches):
     diff_data = result.data
     
     if not diff_data['has_changes']:
-        if diff_data['staged']:
-            click.echo("No staged changes.")
-        elif diff_data['branches']:
-            if len(diff_data['branches']) == 1:
-                click.echo(f"No changes between current branch and {diff_data['branches'][0]}.")
-            else:
-                click.echo(f"No changes between {diff_data['branches'][0]} and {diff_data['branches'][1]}.")
+        click.echo("No changes to show")
+        return
+    
+    # Print diff header
+    if diff_data['staged']:
+        click.echo("Staged changes:")
+    elif diff_data['branches']:
+        if len(diff_data['branches']) == 1:
+            click.echo(f"Changes vs {diff_data['branches'][0]}:")
         else:
-            click.echo("No unstaged changes.")
+            click.echo(f"Changes between {diff_data['branches'][0]} and {diff_data['branches'][1]}:")
     else:
-        click.echo(diff_data['diff'])
+        click.echo("Current changes:")
+    
+    click.echo("=" * 50)
+    click.echo(diff_data['diff'])
 
 @main.command()
 def mcp():

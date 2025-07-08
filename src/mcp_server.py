@@ -211,31 +211,90 @@ def ctx_diff(staged: bool = False, source_branch: str = "", target_branch: str =
         if not diff_data['has_changes']:
             return "📄 No changes to show"
         
-        output = f"📄 {'Staged changes' if staged else 'Changes'}"
-        if branches:
-            output += f" between {' and '.join(branches)}"
-        output += ":\n\n"
-        output += diff_data['diff']
+        output = "📋 Diff Results\n\n"
+        if diff_data['staged']:
+            output += "Type: Staged changes\n"
+        elif diff_data['branches']:
+            if len(diff_data['branches']) == 1:
+                output += f"Type: Changes vs {diff_data['branches'][0]}\n"
+            else:
+                output += f"Type: Changes between {diff_data['branches'][0]} and {diff_data['branches'][1]}\n"
+        else:
+            output += "Type: Current changes\n"
         
+        output += "=" * 50 + "\n"
+        output += diff_data['diff']
         return output
     else:
         return f"❌ {result.error}"
+
+@mcp.tool
+def ctx_show_all(directory: str = "", branch: str = "", pattern: str = "") -> str:
+    """Display all file contents with clear delimiters for LLM context absorption.
+    
+    This command shows the entire repository state in one output, perfect for providing
+    complete context to LLM agents.
+    
+    Args:
+        directory: Optional directory to show (relative to ctx root)
+        branch: Optional branch to show files from (default: current branch)
+        pattern: Optional file pattern to filter (e.g., "*.md")
+        
+    Returns:
+        Formatted output with all file contents and clear delimiters
+    """
+    # Convert empty strings to None for the core logic
+    dir_param = directory if directory else None
+    branch_param = branch if branch else None
+    pattern_param = pattern if pattern else None
+    
+    result = core.show_all(directory=dir_param, branch=branch_param, pattern=pattern_param)
+    
+    if not result.success:
+        return f"❌ {result.error}"
+    
+    show_result = result.data
+    
+    # Build formatted output
+    output = "=" * 80 + "\n"
+    output += "📁 CTX REPOSITORY CONTENTS\n"
+    output += "=" * 80 + "\n"
+    output += f"Branch: {show_result.branch}\n"
+    if show_result.directory:
+        output += f"Directory: {show_result.directory}\n"
+    if show_result.pattern:
+        output += f"Pattern: {show_result.pattern}\n"
+    output += f"Total files: {show_result.total_files}\n\n"
+    
+    # Add each file with clear delimiters
+    for i, file_info in enumerate(show_result.files):
+        output += "=" * 80 + "\n"
+        output += f"📄 FILE {i+1}/{show_result.total_files}: {file_info['path']}\n"
+        output += f"📊 Size: {file_info['size']} chars, Lines: {file_info['lines']}\n"
+        output += "=" * 80 + "\n\n"
+        output += file_info['content']
+        output += "\n\n"
+    
+    output += "=" * 80 + "\n"
+    output += "✅ REPOSITORY CONTENTS COMPLETE\n"
+    output += "=" * 80 + "\n"
+    
+    return output
 
 # === File Operations Tools ===
 
 @mcp.tool
 def ctx_read_file(filepath: str, branch: str = "") -> str:
-    """Read a file from the ctx repository.
+    """Read a specific file from the ctx repository.
     
     Args:
-        filepath: Path to the file to read
-        branch: Branch to read from (default: current branch)
+        filepath: Path to the file relative to ctx root
+        branch: Optional branch to read from (default: current branch)
         
     Returns:
         File contents or error message
     """
-    ctx_root = core.find_ctx_root()
-    if not ctx_root:
+    if not core.is_ctx_repo():
         return "❌ Not in a ctx repository"
     
     try:
@@ -244,15 +303,25 @@ def ctx_read_file(filepath: str, branch: str = "") -> str:
             content = core.get_file_content_at_branch(filepath, branch)
             if content is None:
                 return f"❌ File '{filepath}' not found in branch '{branch}'"
-            return content
+            return f"📄 {filepath} (branch: {branch})\n{'=' * 50}\n{content}"
         else:
             # Read from current working directory
+            ctx_root = core.find_ctx_root()
+            if not ctx_root:
+                return "❌ Could not find ctx root"
+            
             file_path = ctx_root / filepath
             if not file_path.exists():
                 return f"❌ File '{filepath}' not found"
             
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return f.read()
+            if not file_path.is_file():
+                return f"❌ '{filepath}' is not a file"
+            
+            with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read()
+            
+            return f"📄 {filepath}\n{'=' * 50}\n{content}"
+    
     except Exception as e:
         return f"❌ Error reading file: {e}"
 
