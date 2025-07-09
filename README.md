@@ -123,6 +123,7 @@ Note: I haven't yet explored the MCP integration in its full capacity, but have 
 - `ctx explore <topic>` - Start exploring a new topic (creates branch)
 - `ctx save <message>` - save current insights, equivalent to `git -A && git commit -m`
 - `ctx integrate <exploration>` - Merge insights back to main context
+- `ctx discard` - Reset to last commit, dropping all changes (with --force: also removes untracked files)
 
 ## Managing Contexts
 

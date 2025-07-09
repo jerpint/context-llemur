@@ -37,6 +37,10 @@ ctx explore <topic>         # Start exploring a new topic or idea
                            # Git equivalent: git checkout -b <topic>
 ctx save "<message>"     # Saves the current state of the context repository
                            # Git equivalent: git add -A && git commit -m "<message>"
+ctx discard                 # Reset to last commit, dropping all changes
+                           # Git equivalent: git reset --hard HEAD
+ctx discard --force         # Reset to last commit and remove untracked files
+                           # Git equivalent: git reset --hard HEAD && git clean -fd
 ```
 
 ### Integrating Insights (Merging)
@@ -59,6 +63,8 @@ For users familiar with git, here's the direct mapping:
 | `ctx integrate <branch>` | `git merge <branch>` | Merge branch into current |
 | `ctx status` | `git status && git branch` | Show repo and branch status |
 | `ctx diff` | `git diff` | Show repo and branch status |
+| `ctx discard` | `git reset --hard HEAD` | Reset to last commit, drop all changes |
+| `ctx discard --force` | `git reset --hard HEAD && git clean -fd` | Reset and remove untracked files |
 
 
 ## Workflow Examples
@@ -88,6 +94,17 @@ ctx explore "alternative-approach" # Create new exploration branch
 # Document findings and insights
 ctx save "discovered performance bottleneck in current approach"
 ctx integrate "alternative-approach" --preview # Review before integrating
+```
+
+### Experimenting Safely
+```bash
+ctx explore "risky-experiment"  # Start experimental branch
+# Try out some ideas, make changes...
+ctx save "experimental changes that might not work"
+# Realize the experiment didn't work out
+ctx discard                     # Reset to last commit, drop all changes
+# Or if you have untracked files to clean up too
+ctx discard --force             # Reset and remove untracked files
 ```
 
 ### Multiple Context Repositories

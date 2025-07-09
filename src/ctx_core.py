@@ -396,7 +396,7 @@ class CtxCore:
             return OperationResult(False, error=f"Error starting exploration: {e}")
     
     def save(self, message: str) -> OperationResult:
-        """Saves the current state of the context repository"""
+        """Save the current state of the context repository"""
         if not self.is_ctx_repo():
             return OperationResult(False, error="Not in a ctx repository")
         
@@ -405,19 +405,54 @@ class CtxCore:
             return OperationResult(False, error="No ctx repository found")
         
         try:
-            # Check if there are any changes to commit
-            if not repo.is_dirty(untracked_files=True):
+            # Add all changes
+            repo.git.add(A=True)
+            
+            # Check if there are changes to commit
+            if not repo.is_dirty():
                 return OperationResult(True, "No changes to save")
             
-            # Stage all changes
-            repo.git.add('-A')
-            
-            # Commit with the provided message
+            # Commit the changes
             repo.index.commit(message)
-            return OperationResult(True, f"Saved: {message}", data={'message': message})
+            
+            return OperationResult(True, f"Saved context: {message}")
             
         except Exception as e:
             return OperationResult(False, error=f"Error saving context: {e}")
+    
+    def discard(self, force: bool = False) -> OperationResult:
+        """Discard all changes and reset to the last commit
+        
+        This performs a git reset --hard HEAD operation, which:
+        - Removes all staged changes
+        - Removes all unstaged changes
+        - Resets all files to their state at the last commit
+        
+        Args:
+            force: If True, also removes untracked files and directories (git clean -fd)
+        """
+        if not self.is_ctx_repo():
+            return OperationResult(False, error="Not in a ctx repository")
+        
+        repo = self.get_ctx_repo()
+        if not repo:
+            return OperationResult(False, error="No ctx repository found")
+        
+        try:
+            # Perform hard reset to HEAD
+            repo.git.reset('--hard', 'HEAD')
+            
+            # Only clean untracked files if force is True
+            if force:
+                repo.git.clean('-fd')
+                return OperationResult(True, "All changes discarded and untracked files removed. Reset to last commit.")
+            else:
+                return OperationResult(True, "All changes discarded. Reset to last commit.")
+            
+        except GitCommandError as e:
+            return OperationResult(False, error=f"Error discarding changes: {e}")
+        except Exception as e:
+            return OperationResult(False, error=f"Error discarding changes: {e}")
     
     def get_merge_preview(self, source_branch: str, target_branch: str = 'main') -> OperationResult:
         """Get a preview of what would happen in a merge"""

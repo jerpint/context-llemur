@@ -237,6 +237,29 @@ def ctx_save(message: str) -> str:
         return f"❌ {result.error}"
 
 @mcp.tool
+def ctx_discard(force: bool = False) -> str:
+    """Reset to last commit, dropping all changes.
+    
+    This performs a git reset --hard HEAD operation, which:
+    - Removes all staged changes
+    - Removes all unstaged changes
+    - Resets all files to their state at the last commit
+    - With force=True: also removes untracked files and directories
+    
+    Args:
+        force: If True, also removes untracked files and directories (default: False)
+        
+    Returns:
+        Success message confirming the discard operation
+    """
+    result = core.discard(force=force)
+    
+    if result.success:
+        return f"🗑️ {result.message}"
+    else:
+        return f"❌ {result.error}"
+
+@mcp.tool
 def ctx_integrate(source_branch: str, target_branch: str = "main") -> str:
     """Integrate insights from one branch into another.
     
@@ -338,7 +361,7 @@ def ctx_read_file(filepath: str, branch: str = "") -> str:
             return f"📄 {filepath} (branch: {branch})\n{'=' * 50}\n{content}"
         else:
             # Read from current working directory
-            ctx_root = core.find_ctx_root()
+            ctx_root = core.get_active_ctx_path()
             if not ctx_root:
                 return "❌ Could not find ctx root"
             
@@ -368,7 +391,7 @@ def ctx_write_file(filepath: str, content: str) -> str:
     Returns:
         Success message or error
     """
-    ctx_root = core.find_ctx_root()
+    ctx_root = core.get_active_ctx_path()
     if not ctx_root:
         return "❌ Not in a ctx repository"
     
@@ -395,7 +418,7 @@ def ctx_list_files(directory: str = "") -> str:
     Returns:
         List of files and directories
     """
-    ctx_root = core.find_ctx_root()
+    ctx_root = core.get_active_ctx_path()
     if not ctx_root:
         return "❌ Not in a ctx repository"
     
@@ -512,7 +535,7 @@ def ctx_search_content(query: str, file_pattern: str = "*") -> str:
     Returns:
         Search results with file paths and line numbers
     """
-    ctx_root = core.find_ctx_root()
+    ctx_root = core.get_active_ctx_path()
     if not ctx_root:
         return "❌ Not in a ctx repository"
     

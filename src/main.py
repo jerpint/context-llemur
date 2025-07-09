@@ -158,6 +158,52 @@ def save(message):
         click.echo(f"Error: {result.error}", err=True)
         sys.exit(1)
 
+@main.command()
+@click.option('--force', is_flag=True, help='Force discard without confirmation and remove untracked files')
+def discard(force):
+    """Reset to last commit, dropping all changes
+    
+    Git equivalent: git reset --hard HEAD
+    
+    This will:
+    - Remove all staged changes
+    - Remove all unstaged changes 
+    - Reset all files to their state at the last commit
+    - With --force: also removes untracked files and directories
+    """
+    # Check if there are any changes to discard
+    status_result = ctx_core.get_status()
+    if not status_result.success:
+        click.echo(f"Error: {status_result.error}", err=True)
+        sys.exit(1)
+    
+    if not status_result.data.is_dirty:
+        click.echo("No changes to discard. Working tree is clean.")
+        return
+    
+    # Show what will be discarded
+    click.echo("The following changes will be permanently lost:")
+    for item in status_result.data.uncommitted_changes:
+        click.echo(f"  {item}")
+    
+    if force:
+        click.echo("\n⚠️  --force flag: untracked files will also be removed")
+    
+    # Ask for confirmation unless --force is used
+    if not force:
+        if not click.confirm("\nAre you sure you want to discard all changes? This cannot be undone"):
+            click.echo("Discard cancelled.")
+            return
+    
+    # Perform the discard
+    result = ctx_core.discard(force=force)
+    
+    if result.success:
+        click.echo(f"✓ {result.message}")
+    else:
+        click.echo(f"Error: {result.error}", err=True)
+        sys.exit(1)
+
 @main.command(name="list")
 def list_repos():
     """List all discovered ctx repositories"""
