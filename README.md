@@ -1,43 +1,63 @@
 # context-llemur 🐒
 
-context-llemur (ctx) is meant to help LLM amenesia and facilitate human-llm collaboration.
+context-llemur, or `ctx`, is a context-engineering CLI tool to enable collaborative memory for humans and LLMs - think "git for ideas".
 
-**Collaborative memory for humans and LLMs**
-
-`context-llemur` or `ctx` is a git-friendly tool for managing collaborative context between humans and AI assistants. Think "git for ideas".
-
-`ctx` helps you track, explore, and integrate insights across different explorations and conversations. It also mitigates the LLM amnesia tool.
+`ctx` helps overcome LLM amnesia and aims to minimize human repetition by tracking the context of a given project using simple commands.
 
 ## Installation
 
-Installation is recommended using `uv` package manager:
+Installation is recommended using the `uv` package manager.
 
+### From git
+```bash
+# Public repository
+uv pip install git+https://github.com/jerpint/context-llemur.git
+```
+
+```bash
+# Private repository (requires SSH keys)
+uv pip install git+ssh://git@github.com/jerpint/context-llemur.git
+```
+
+### Locally
 ```bash
 git clone https://github.com/jerpint/context-llemur
 cd context-llemur
-uv add 
-uv pip install -e .
+uv venv && uv pip install -e .
 ```
 
-> Coming soon: pypi
+After installation, activate your environment and use the ctx command:
+```bash
+source .venv/bin/activate
+ctx --help
+```
 
-## Quick Start
+Alternatively, you can use `uv run ctx ...`
+
+> Coming soon: deploy on pypi
+
+## Usage
+
+To get started, navigate to an existing git project. Then run `ctx new`. This will automatically create a `context` folder, which will be tracked indepdently - it automatically initializes its own git repo. It will also create a `ctx.config` at the root to keep track multiple context folders.
 
 ```bash
 # Create a new context repository
-ctx new research                  # Creates ./research/ directory
+ctx new # Creates ./context/ directory
 
-# Start exploring a new idea
-ctx explore "machine-learning-bias"
+# edit some files inside the `context/` directory
+echo "The goal of this project is to..." > goals.txt
 
-# Capture insights as you discover them
-ctx capture "identified key bias sources in training data"
+# Save your context over time
+ctx save "updated goals"  # equivalent to git add -A && git commit -m "..."
+```
 
-# Preview what you'd integrate back
-ctx integrate "machine-learning-bias" --preview
+You can also `explore` new ideas and `integrate` them back to the context when ready
 
-# Integrate your insights back to main context
-ctx integrate "machine-learning-bias"
+```bash
+ctx explore "new-feature"
+echo "the first feature we will work on will be..." > TODOS.txt
+ctx save "add new feature"
+ctx integrate
 ```
 
 ## Why context-llemur?
