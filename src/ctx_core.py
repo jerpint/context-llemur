@@ -61,35 +61,32 @@ class CtxCore:
     """Core business logic for ctx operations"""
     
     def __init__(self):
-        pass
+        self._project_root: Optional[Path] = None
     
+    @property
+    def project_root(self) -> Path:
+        if self._project_root is None:
+            self._project_root = self.find_project_root()
+        return self._project_root
+
     def find_project_root(self) -> Path:
-        """Find the project root by looking for ctx.config file"""
+        """Find the project root by looking for ctx.config file."""
         current_dir = Path.cwd()
         
-        # Search upward from current directory (with reasonable limits)
-        max_depth = 10
-        depth = 0
-        
+        # Search upward from current directory
         for parent in [current_dir] + list(current_dir.parents):
-            depth += 1
-            if depth > max_depth:
-                break
-                
-            config_file = parent / 'ctx.config'
-            if config_file.exists():
+            if (parent / 'ctx.config').exists():
                 return parent
-        
-        return current_dir  # Default to current directory if no config found
+            
+        return current_dir  # Default to current directory if nothing is found
     
     def get_ctx_config_path(self) -> Path:
         """Get the path to the ctx.config file"""
-        project_root = self.find_project_root()
-        return project_root / 'ctx.config'
+        return self.project_root / 'ctx.config'
     
     def load_ctx_config(self) -> Dict[str, Any]:
         """Load the ctx configuration from ctx.config file"""
-        config_path = Path.cwd() / 'ctx.config'
+        config_path = self.get_ctx_config_path()
         
         if not config_path.exists():
             return {
@@ -123,7 +120,7 @@ class CtxCore:
     
     def ensure_ctx_config(self) -> OperationResult:
         """Ensure the ctx.config file exists, creating it if necessary"""
-        config_path = Path.cwd() / 'ctx.config'
+        config_path = self.get_ctx_config_path()
         
         if not config_path.exists():
             default_config = {
@@ -138,15 +135,32 @@ class CtxCore:
         
         return OperationResult(True, "ctx.config already exists")
     
-    def find_ctx_root(self) -> Optional[Path]:
-        """Find the active ctx repository from config"""
+    def get_active_ctx_path(self) -> Optional[Path]:
+        """
+        Find the active ctx repository.
+        1. First, check if the current directory is inside a ctx repo by searching upwards for a .ctx file.
+        2. If so, that directory is the active context.
+        3. If not, fall back to loading the configuration from the project root.
+        """
+        # 1. Check if we are currently inside a ctx repo
+        current_dir = Path.cwd()
+        # Search upward from current directory, but not past the project root
+        for parent in [current_dir] + list(current_dir.parents):
+            if parent == self.project_root.parent:
+                break
+            if (parent / '.ctx').exists():
+                # We found it. This is the active context path.
+                return parent
+
+        # 2. If not inside a repo, fall back to config file
         config = self.load_ctx_config()
+        active_ctx_name = config.get('active_ctx')
         
-        if not config['active_ctx']:
+        if not active_ctx_name:
             return None
         
-        # Use current directory as project root
-        ctx_path = Path.cwd() / config['active_ctx']
+        # Use project root to construct path
+        ctx_path = self.project_root / active_ctx_name
         
         # Verify it still exists and has .ctx marker
         if ctx_path.exists() and (ctx_path / '.ctx').exists():
@@ -156,7 +170,7 @@ class CtxCore:
     
     def get_ctx_repo(self) -> Optional[Repo]:
         """Get the GitPython repo object for the ctx directory"""
-        ctx_dir = self.find_ctx_root()
+        ctx_dir = self.get_active_ctx_path()
         if not ctx_dir:
             return None
         try:
@@ -166,7 +180,7 @@ class CtxCore:
     
     def is_ctx_repo(self) -> bool:
         """Check if we're in or under a ctx repository"""
-        return self.find_ctx_root() is not None
+        return self.get_active_ctx_path() is not None
     
     def get_template_dir(self) -> Path:
         """Get the path to the template directory"""
@@ -247,10 +261,12 @@ class CtxCore:
         if not config_result.success:
             return config_result
         
-        ctx_dir = Path(directory)
+        ctx_dir = self.project_root / directory
         
         if ctx_dir.exists():
-            return OperationResult(False, error=f"Directory '{directory}' already exists")
+            # Also check for .ctx marker
+            if (ctx_dir / '.ctx').exists():
+                return OperationResult(False, error=f"Directory '{directory}' already exists")
         
         # Create directory
         ctx_dir.mkdir(parents=True)
@@ -322,7 +338,7 @@ class CtxCore:
         if not self.is_ctx_repo():
             return OperationResult(False, error="Not in a ctx repository")
         
-        ctx_dir = self.find_ctx_root()
+        ctx_dir = self.get_active_ctx_path()
         if not ctx_dir:
             return OperationResult(False, error="No ctx repository found")
         
@@ -597,7 +613,7 @@ class CtxCore:
         if branch not in all_branches:
             return OperationResult(False, error=f"Branch '{branch}' does not exist")
         
-        ctx_root = self.find_ctx_root()
+        ctx_root = self.get_active_ctx_path()
         if not ctx_root:
             return OperationResult(False, error="Could not find ctx root")
         
@@ -690,3 +706,65 @@ class CtxCore:
             
         except Exception as e:
             return OperationResult(False, error=f"Error reading files: {e}") 
+    
+    def get_repository_info(self, name: str) -> RepositoryInfo:
+        """Get information about a specific ctx repository"""
+        config = self.load_ctx_config()
+        active_ctx = config.get('active_ctx')
+        
+        path = self.project_root / name
+        absolute_path = path.resolve()
+        exists = path.exists() and (path / '.ctx').exists()
+        
+        repo = None
+        if exists:
+            try:
+                repo = Repo(path)
+            except InvalidGitRepositoryError:
+                pass
+        
+        is_valid = repo is not None
+        
+        return RepositoryInfo(
+            name=name,
+            path=path,
+            absolute_path=absolute_path,
+            is_active=name == active_ctx,
+            exists=exists,
+            is_valid=is_valid
+        )
+    
+    def delete_repository(self, name: str, force: bool = False) -> OperationResult:
+        """Delete a ctx repository"""
+        config = self.load_ctx_config()
+        
+        if name not in config['discovered_ctx']:
+            return OperationResult(False, error=f"Context repository '{name}' not found in config")
+        
+        ctx_path = self.project_root / name
+        
+        if not ctx_path.exists() or not (ctx_path / '.ctx').exists():
+            # Directory doesn't exist, so just remove from config
+            pass
+        
+        # Remove from discovered list
+        config['discovered_ctx'].remove(name)
+        
+        # If it's the active repository, set active to None
+        if config['active_ctx'] == name:
+            config['active_ctx'] = None
+        
+        # Save updated config
+        save_result = self.save_ctx_config(config)
+        
+        if not save_result.success:
+            return save_result
+        
+        # If directory exists, delete it
+        if ctx_path.exists():
+            try:
+                shutil.rmtree(ctx_path)
+            except Exception as e:
+                return OperationResult(False, error=f"Error deleting directory: {e}")
+        
+        return OperationResult(True, f"Deleted ctx repository: {name}", data={'repository': name})
