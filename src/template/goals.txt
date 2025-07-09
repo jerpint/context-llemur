@@ -1,3 +1,7 @@
 # High level goals
 
-Name of project:
+## Immediate next steps:
+...
+
+## Long-term priorities
+...

@@ -1,5 +1,7 @@
-* Never commit to main branch
-* Keep files short
-* If files start getting long, break them up into files, with descriptive names
-* Keep a summary at the top of each file, such that a "head" quickly explains what is in the file
-* If necessary, you can also keep a summary.txt inside each subfolder
+## Context rules
+
+* Stick to human-readable and LLM-friendly formats
+* Keep files short, maintain them and clean them up regularly
+* If files start getting long, break them up into smaller files and folders and subfolders. Use descriptive filenames
+
+<Add additional rules here if necessary>
