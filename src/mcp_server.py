@@ -20,7 +20,92 @@ mcp = FastMCP("ctx-server")
 # Initialize the core logic
 core = CtxCore()
 
+def format_ctx_show_all(directory: str = "", branch: str = "", pattern: str = "") -> str:
+    """Display all file contents with clear delimiters for LLM context absorption.
+    
+    This command shows the entire repository state in one output, perfect for providing
+    complete context to LLM agents.
+    
+    Args:
+        directory: Optional directory to show (relative to ctx root)
+        branch: Optional branch to show files from (default: current branch)
+        pattern: Optional file pattern to filter (e.g., "*.md")
+        
+    Returns:
+        Formatted output with all file contents and clear delimiters
+    """
+    # Convert empty strings to None for the core logic
+    dir_param = directory if directory else None
+    branch_param = branch if branch else None
+    pattern_param = pattern if pattern else None
+    
+    result = core.show_all(directory=dir_param, branch=branch_param, pattern=pattern_param)
+    
+    if not result.success:
+        return f"❌ {result.error}"
+    
+    show_result = result.data
+    
+    # Build formatted output
+    output = "=" * 80 + "\n"
+    output += "📁 CTX REPOSITORY CONTENTS\n"
+    output += "=" * 80 + "\n"
+    output += f"Branch: {show_result.branch}\n"
+    if show_result.directory:
+        output += f"Directory: {show_result.directory}\n"
+    if show_result.pattern:
+        output += f"Pattern: {show_result.pattern}\n"
+    output += f"Total files: {show_result.total_files}\n\n"
+    
+    # Add each file with clear delimiters
+    for i, file_info in enumerate(show_result.files):
+        output += "=" * 80 + "\n"
+        output += f"📄 FILE {i+1}/{show_result.total_files}: {file_info['path']}\n"
+        output += f"📊 Size: {file_info['size']} chars, Lines: {file_info['lines']}\n"
+        output += "=" * 80 + "\n\n"
+        output += file_info['content']
+        output += "\n\n"
+    
+    output += "=" * 80 + "\n"
+    output += "✅ REPOSITORY CONTENTS COMPLETE\n"
+    output += "=" * 80 + "\n"
+    
+    return output
+
 # === Repository Management Tools ===
+
+@mcp.tool
+def ctx_show_all(directory: str = "", branch: str = "", pattern: str = "") -> str:
+    """Display all file contents with clear delimiters for LLM context absorption.
+    
+    This command shows the entire repository state in one output, perfect for providing
+    complete context to LLM agents.
+    
+    Args:
+        directory: Optional directory to show (relative to ctx root)
+        branch: Optional branch to show files from (default: current branch)
+        pattern: Optional file pattern to filter (e.g., "*.md")
+        
+    Returns:
+        Formatted output with all file contents and clear delimiters
+    """
+    return format_ctx_show_all(directory, branch, pattern)
+
+
+@mcp.tool
+def ctx_load() -> str:
+    """Load the current ctx repository.
+
+    ctx is a system for collaborative memory for LLMs and humans.
+
+    When a user calls ctx load, just run this function to get all the context you need.
+
+    
+    Returns:
+        Success message and repository details
+    """
+    show_all_str = format_ctx_show_all()
+    return show_all_str
 
 @mcp.tool
 def ctx_new(directory: str = "context") -> str:
@@ -227,59 +312,6 @@ def ctx_diff(staged: bool = False, source_branch: str = "", target_branch: str =
         return output
     else:
         return f"❌ {result.error}"
-
-@mcp.tool
-def ctx_show_all(directory: str = "", branch: str = "", pattern: str = "") -> str:
-    """Display all file contents with clear delimiters for LLM context absorption.
-    
-    This command shows the entire repository state in one output, perfect for providing
-    complete context to LLM agents.
-    
-    Args:
-        directory: Optional directory to show (relative to ctx root)
-        branch: Optional branch to show files from (default: current branch)
-        pattern: Optional file pattern to filter (e.g., "*.md")
-        
-    Returns:
-        Formatted output with all file contents and clear delimiters
-    """
-    # Convert empty strings to None for the core logic
-    dir_param = directory if directory else None
-    branch_param = branch if branch else None
-    pattern_param = pattern if pattern else None
-    
-    result = core.show_all(directory=dir_param, branch=branch_param, pattern=pattern_param)
-    
-    if not result.success:
-        return f"❌ {result.error}"
-    
-    show_result = result.data
-    
-    # Build formatted output
-    output = "=" * 80 + "\n"
-    output += "📁 CTX REPOSITORY CONTENTS\n"
-    output += "=" * 80 + "\n"
-    output += f"Branch: {show_result.branch}\n"
-    if show_result.directory:
-        output += f"Directory: {show_result.directory}\n"
-    if show_result.pattern:
-        output += f"Pattern: {show_result.pattern}\n"
-    output += f"Total files: {show_result.total_files}\n\n"
-    
-    # Add each file with clear delimiters
-    for i, file_info in enumerate(show_result.files):
-        output += "=" * 80 + "\n"
-        output += f"📄 FILE {i+1}/{show_result.total_files}: {file_info['path']}\n"
-        output += f"📊 Size: {file_info['size']} chars, Lines: {file_info['lines']}\n"
-        output += "=" * 80 + "\n\n"
-        output += file_info['content']
-        output += "\n\n"
-    
-    output += "=" * 80 + "\n"
-    output += "✅ REPOSITORY CONTENTS COMPLETE\n"
-    output += "=" * 80 + "\n"
-    
-    return output
 
 # === File Operations Tools ===
 
