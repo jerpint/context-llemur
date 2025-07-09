@@ -58,6 +58,8 @@ For users familiar with git, here's the direct mapping:
 | `ctx save "<message>"` | `git add . && git commit -m "<message>"` | Stage and commit changes |
 | `ctx integrate <branch>` | `git merge <branch>` | Merge branch into current |
 | `ctx status` | `git status && git branch` | Show repo and branch status |
+| `ctx diff` | `git diff` | Show repo and branch status |
+
 
 ## Workflow Examples
 

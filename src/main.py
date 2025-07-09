@@ -265,7 +265,7 @@ def show_all(directory, branch, pattern):
 @main.command()
 @click.option('--staged', is_flag=True, help='Show staged changes')
 @click.argument('branches', nargs=-1)
-def difference(staged, branches):
+def diff(staged, branches):
     """Show git diff equivalent for the ctx repository
     
     Examples:
