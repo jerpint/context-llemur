@@ -64,13 +64,19 @@ For users familiar with git, here's the direct mapping:
 ### Starting a New Project
 ```bash
 ctx new my-research         # Create repository in 'my-research' directory
-cd my-research              # Navigate to the repository
-# Edit ctx.txt and goals.txt with your context
+# Add/Edit files inside your new 'my-research' directory
+ctx save "identified key bias sources in training data" # git add -A && git commit -m "..."
+```
+
+### Using branching contexts
+```bash
+ctx new my-research         # Create repository in 'my-research' directory
+# Add/Edit files inside your new 'my-research' directory
 ctx explore "bias-detection-methods" # git checkout -b bias-detection-methods
 # Work on your ideas, document insights
-ctx save "identified key bias sources in training data" # git add . && git commit -m "..."
+ctx save "identified key bias sources in training data" # git add -A && git commit -m "..."
 ctx integrate "bias-detection-methods" --preview # Preview merge
-ctx integrate "bias-detection-methods"  # git merge bias-detection-methods
+ctx integrate "bias-detection-methods"  # git merge bias-detection-methods into main
 ```
 
 ### Collaborative Thinking
