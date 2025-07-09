@@ -48,17 +48,6 @@ def new(directory, custom_dir):
         sys.exit(1)
 
 @main.command()
-def init():
-    """Initialize a new ctx repository (deprecated - use 'ctx new' instead)"""
-    click.echo("Warning: 'ctx init' is deprecated. Use 'ctx new' instead.", err=True)
-    # Call the new command with default directory
-    from click.testing import CliRunner
-    runner = CliRunner()
-    result = runner.invoke(new, ['context'])
-    if result.exit_code != 0:
-        sys.exit(result.exit_code)
-
-@main.command()
 @click.argument('exploration')
 @click.option('--preview', is_flag=True, help='Show what would be integrated without performing the integration')
 @click.option('--target', default='main', help='Target branch to integrate into (default: main)')
@@ -159,7 +148,7 @@ def explore(topic):
 def save(message):
     """Saves the current state of the context repository
     
-    Git equivalent: git add . && git commit -m "<message>"
+    Git equivalent: git add -A && git commit -m "<message>"
     """
     result = ctx_core.save(message)
     
