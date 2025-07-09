@@ -25,3 +25,6 @@ ctx = "src.main:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["src*"]
+
+[tool.setuptools.package-data]
+src = ["template/*"]
