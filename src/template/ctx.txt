@@ -1,7 +1,15 @@
-# context-llemur: Collaborative Memory for Humans and LLMs
+---
+Note:️ This file provides global context and should ideally not be modified or removed
+---
+
+# context-llemur 🐒: Collaborative Memory for Humans and LLMs
+
+context-llemur, or `ctx`, is a context-engineering CLI tool to enable collaborative memory for humans and LLMs - think "git for ideas".
+
+`ctx` helps overcome LLM amnesia and aims to minimize human repetition by tracking the context of a given project using simple commands.
 
 ## What is ctx?
-ctx is a version-controlled collaborative thinking system where ideas evolve through commits, branch into experiments, and merge across different minds (human and AI). 
+`ctx` is a version-controlled collaborative thinking system where ideas evolve through commits, branch into experiments, and merge across different minds (human and AI). 
 
 Not a knowledge base, but a living memory that travels between LLM sessions.
 
@@ -11,46 +19,43 @@ Not a knowledge base, but a living memory that travels between LLM sessions.
 - **Linear Thinking**: Can't branch conversations or explore alternatives
 - **Fragmented Memory**: Context scattered across different tools
 
-## How It Works
-ctx works like git, but for thoughts and ideas instead of code:
-- **Commits** represent crystallized thoughts or decisions
-- **Explorations** are alternative ways of investigating a concept  
-- **Integrations** combine successful insight threads
-- **History** preserves the evolution of thinking
-
-## Available Commands
+## Core Commands
 
 ### Repository Management
 ```bash
 ctx new                     # Create new ctx repository in 'context' directory
 ctx new <directory>         # Create new ctx repository in custom directory  
-ctx new --dir <directory>   # Alternative syntax for custom directory
 ctx status                  # Show current branch and repository status
-                           # Git equivalent: git status && git branch
 ctx list                    # List all discovered ctx repositories with status
 ctx switch <name>           # Switch to a different ctx repository
 ```
 
-### Exploring Ideas (Branching)
+### Exploration & Integration
 ```bash
 ctx explore <topic>         # Start exploring a new topic or idea
-                           # Git equivalent: git checkout -b <topic>
-ctx save "<message>"     # Saves the current state of the context repository
-                           # Git equivalent: git add -A && git commit -m "<message>"
+ctx save "<message>"        # Save current insights (git add -A && git commit -m)
+ctx integrate <exploration> # Merge insights back to main context
 ctx discard                 # Reset to last commit, dropping all changes
-                           # Git equivalent: git reset --hard HEAD
-ctx discard --force         # Reset to last commit and remove untracked files
-                           # Git equivalent: git reset --hard HEAD && git clean -fd
+ctx discard --force         # Reset and remove untracked files
 ```
 
-### Integrating Insights (Merging)
+## Quickstart Workflow
+
 ```bash
-ctx integrate <exploration>  # Integrate insights from an exploration
-                            # Git equivalent: git merge <exploration>
-ctx integrate <exploration> --preview # Preview what would be integrated
-                            # Git equivalent: git merge <exploration> --no-commit
-ctx integrate <exploration> --target <branch> # Integrate into specific target branch
-                            # Git equivalent: git checkout <branch> && git merge <exploration>
+# Create a new context repository
+ctx new # Creates ./context/ directory
+
+# Edit some files inside the `context/` directory
+echo "The goal of this project is to..." > goals.txt
+
+# Save your context over time
+ctx save "updated goals"  
+
+# Explore new ideas and integrate them back
+ctx explore "new-feature"
+echo "the first feature we will work on will be..." > TODOS.txt
+ctx save "add new feature"
+ctx integrate "new-feature"
 ```
 
 ## Git Command Mapping
@@ -62,64 +67,38 @@ For users familiar with git, here's the direct mapping:
 | `ctx save "<message>"` | `git add . && git commit -m "<message>"` | Stage and commit changes |
 | `ctx integrate <branch>` | `git merge <branch>` | Merge branch into current |
 | `ctx status` | `git status && git branch` | Show repo and branch status |
-| `ctx diff` | `git diff` | Show repo and branch status |
-| `ctx discard` | `git reset --hard HEAD` | Reset to last commit, drop all changes |
-| `ctx discard --force` | `git reset --hard HEAD && git clean -fd` | Reset and remove untracked files |
+| `ctx discard` | `git reset --hard HEAD` | Reset to last commit |
 
+## Why context-llemur?
 
-## Workflow Examples
+- **Platform agnostic** - Doesn't adhere to a specific provider, e.g. `CLAUDE.md` or `cursorrules`
+- **Portable**: Context repositories are just git directories with files, take them anywhere
+- **Git-friendly**: Uses familiar git workflows under the hood, easy to add/extend commands
+- **Flexible**: You control the workflow with the LLMs
 
-### Starting a New Project
-```bash
-ctx new my-research         # Create repository in 'my-research' directory
-# Add/Edit files inside your new 'my-research' directory
-ctx save "identified key bias sources in training data" # git add -A && git commit -m "..."
+## Managing Multiple Contexts
+
+`ctx` supports switching between multiple independent contexts using:
+
+- **`ctx.config`**: TOML file at the root tracking active and available repositories
+- **`.ctx` marker**: Empty file in each context repository for identification
+
+Example `ctx.config`:
+```toml
+active_ctx = "research"
+discovered_ctx = ["context", "research", "experiments"]
 ```
 
-### Using branching contexts
-```bash
-ctx new my-research         # Create repository in 'my-research' directory
-# Add/Edit files inside your new 'my-research' directory
-ctx explore "bias-detection-methods" # git checkout -b bias-detection-methods
-# Work on your ideas, document insights
-ctx save "identified key bias sources in training data" # git add -A && git commit -m "..."
-ctx integrate "bias-detection-methods" --preview # Preview merge
-ctx integrate "bias-detection-methods"  # git merge bias-detection-methods into main
-```
+This allows you to:
+- Create multiple context repositories in the same workspace
+- Switch between them easily with `ctx switch <name>`
+- Work from your project root without changing directories
+- Keep repositories portable and git-friendly
 
-### Collaborative Thinking
-```bash
-ctx status                  # Check current state (git status && git branch)
-ctx explore "alternative-approach" # Create new exploration branch
-# Document findings and insights
-ctx save "discovered performance bottleneck in current approach"
-ctx integrate "alternative-approach" --preview # Review before integrating
-```
-
-### Experimenting Safely
-```bash
-ctx explore "risky-experiment"  # Start experimental branch
-# Try out some ideas, make changes...
-ctx save "experimental changes that might not work"
-# Realize the experiment didn't work out
-ctx discard                     # Reset to last commit, drop all changes
-# Or if you have untracked files to clean up too
-ctx discard --force             # Reset and remove untracked files
-```
-
-### Multiple Context Repositories
-```bash
-ctx new ideas               # Create 'ideas' directory
-ctx new --dir research      # Create 'research' directory
-ctx new work-projects       # Create 'work-projects' directory
-# Each directory is a separate ctx repository
-```
-
-## Conventions
+## Best Practices
 
 ### Repository Structure
 - Each ctx repository is identified by a `.ctx` marker file
-- Repositories can be named anything (e.g., 'research', 'ideas', 'work-context')
 - Multiple ctx repositories can coexist in the same workspace
 - Commands work from any subdirectory within a ctx repository
 
@@ -131,38 +110,13 @@ ctx new work-projects       # Create 'work-projects' directory
 - Commit early and often to preserve thinking evolution
 - Use clear commit messages that capture the insight or decision
 
-### File Organization
-- Keep files focused and readable for both humans and LLMs
-- Use descriptive filenames that capture the content purpose
-- Aim to keep total repository size manageable for LLM context
-
 ### Integration Protocol
-- Always preview integrations first with `--preview` flag
+- Always preview integrations first with `--preview` flag when available
 - Main branch represents the current consensus/truth
 - Exploration branches are for trying new ideas and approaches
-- Resolve conflicts thoughtfully, preserving valuable insights from both sides
 
 ## Technical Notes
 - ctx repositories are standard git repositories with additional tooling
 - All git commands work normally within the ctx repository directory
 - Files are stored as plain text for maximum compatibility
 - Repository state travels with the ctx directory
-- The `.ctx` marker file identifies ctx repositories
-- A `ctx.config` file tracks active and discovered ctx repositories
-
-### Simple Configuration Management
-ctx uses a simple TOML configuration file (`ctx.config`) at your project root:
-- **Active repository**: The currently selected ctx repository
-- **Discovered repositories**: All known ctx repositories in your project
-- **Automatic updates**: When you create a new ctx repository, it becomes the active one
-- **Manual switching**: Use `ctx list` to see all repositories and their status
-
-Example `ctx.config`:
-```toml
-active_ctx = "research"
-discovered_ctx = ["context", "research", "experiments"]
-```
-
-This means you can run `ctx new` from your project root and immediately use `ctx status` without changing directories.
-
-This file (ctx.txt) provides global context and should not be modified during normal usage.
