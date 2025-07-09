@@ -36,9 +36,9 @@ Alternatively, you can use `uv run ctx ...`
 
 > Coming soon: deploy on pypi
 
-## Usage
+## Quickstart
 
-To get started, navigate to an existing git project. Then run `ctx new`. This will automatically create a `context` folder, which will be tracked indepdently - it automatically initializes its own git repo. It will also create a `ctx.config` at the root to keep track multiple context folders.
+To get started, navigate to an existing git project or folder. Then run `ctx new`. This will automatically create a `context` folder, which will be tracked indepdently of your current project. It will also create a `ctx.config` at the root to keep track multiple context folders (more on that later).
 
 ```bash
 # Create a new context repository
@@ -60,12 +60,56 @@ ctx save "add new feature"
 ctx integrate
 ```
 
+## Use cases
+
+### Cursor
+
+The primary use-case for `ctx` is for it to be used with cursor. In fact, `ctx` was developped using `ctx`!
+
+A suggested workflow is to include the entire `context` folder, or better add a `.cursorrule` to always include the `context` folder.
+
+By default, a new context folder includes `ctx.txt`, which explains to the LLM what context is, so it out-the-box will be aware that it is using `ctx` and you can simply ask it to update your contexts.
+
+### MCP Server
+
+`ctx` also exists as an MCP server with the same primitives as the CLI tool, allowing you to easily get your favourite LLMs up-to-date. Simply start a conversation with `ctx load`.
+
+> TODO: Add instructions for adding the MCP server.
+
+
+
+
+#### Claude
+
+Install the project locally - then add to your `~/Library/Application\ Support/Claude/claude_desktop_config.json`
+
+```
+{
+  "mcpServers": {
+    "context-llemur": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/Users/jerpint/context-llemur",
+        "python",
+        "src/mcp_server.py"
+      ]
+    }
+  }
+}
+```
+
+Now simply start your conversation with `ctx load` and voila!
+
+Note: I haven't yet explored the MCP integration in its full capacity, but have a basic working implementation for now.
+
 ## Why context-llemur?
 
-- **Git-friendly**: Uses familiar git workflows under the hood
-- **Collaborative**: Designed for human-LLM collaboration
-- **Portable**: Context repositories are just git directories with files
-- **Flexible**: Works with any AI assistant or tool
+- **Platform agnostic** - Doesn't adhere to a specific provider, e.g. `CLAUDE.md` or `cursorrules`
+- **Portable**: Context repositories are just git directories with files, take them anywhere with you
+- **Git-friendly**: Uses familiar git workflows under the hood, easy to add/extend commands
+- **Flexible**: You control the workflow with the LLMs
 
 ## Core Commands
 
@@ -77,23 +121,24 @@ ctx integrate
 
 ### Exploration & Integration
 - `ctx explore <topic>` - Start exploring a new topic (creates branch)
-- `ctx capture <message>` - Capture current insights (commits changes)
+- `ctx save <message>` - save current insights, equivalent to `git -A && git commit -m`
 - `ctx integrate <exploration>` - Merge insights back to main context
-- `ctx integrate <exploration> --preview` - Preview integration without executing
 
-## Repository Discovery
+## Managing Contexts
 
-ctx uses a simple config-based approach for managing multiple context repositories:
+`ctx` supports switching between multiple indepdendent contexts. 
 
-- **`.ctx.config`**: TOML file at your project root tracks active and discovered repositories
+Creating a new context will automatically switch to the new context. Switch back to the previous context using `ctx switch`.
+
+Contexts are managed using the following 2 files:
+
+- **`.ctx.config`**: TOML file at the root of the project which tracks active and available repositories
 - **`.ctx` marker**: Empty file in each context repository for identification
-- **Auto-discovery**: `ctx new` automatically registers new repositories
-- **Seamless workflow**: Run `ctx new research` from project root, then `ctx status` works immediately
 
 Example `.ctx.config`:
 ```toml
 active_ctx = "research"
-discovered_ctx = ["ctx", "research", "experiments"]
+discovered_ctx = ["context", "research", "experiments"]
 ```
 
 This design allows you to:
@@ -103,3 +148,5 @@ This design allows you to:
 - Keep repositories portable and git-friendly
 
 ---
+
+⚠️ `ctx` is in active development
