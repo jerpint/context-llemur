@@ -135,19 +135,19 @@ def ctx_explore(topic: str) -> str:
         return f"❌ {result.error}"
 
 @mcp.tool
-def ctx_capture(message: str) -> str:
-    """Capture current insights and thinking with a descriptive message.
+def ctx_save(message: str) -> str:
+    """Saves the current state of the context repository.
     
     Args:
-        message: Description of what you're capturing
+        message: Description of what you're saving
         
     Returns:
-        Success message confirming the capture
+        Success message confirming the save
     """
-    result = core.capture_insights(message)
+    result = core.save(message)
     
     if result.success:
-        return f"💭 {result.message}"
+        return f"💾 {result.message}"
     else:
         return f"❌ {result.error}"
 

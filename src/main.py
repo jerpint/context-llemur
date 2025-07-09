@@ -156,12 +156,12 @@ def explore(topic):
 
 @main.command()
 @click.argument('message')
-def capture(message):
-    """Capture current insights and thinking
+def save(message):
+    """Saves the current state of the context repository
     
     Git equivalent: git add . && git commit -m "<message>"
     """
-    result = ctx_core.capture_insights(message)
+    result = ctx_core.save(message)
     
     if result.success:
         click.echo(f"✓ {result.message}")
@@ -169,8 +169,8 @@ def capture(message):
         click.echo(f"Error: {result.error}", err=True)
         sys.exit(1)
 
-@main.command()
-def list():
+@main.command(name="list")
+def list_repos():
     """List all discovered ctx repositories"""
     result = ctx_core.list_repositories()
     
@@ -265,14 +265,14 @@ def show_all(directory, branch, pattern):
 @main.command()
 @click.option('--staged', is_flag=True, help='Show staged changes')
 @click.argument('branches', nargs=-1)
-def diff(staged, branches):
+def difference(staged, branches):
     """Show git diff equivalent for the ctx repository
     
     Examples:
-        ctx diff                      # Show current changes
-        ctx diff --staged             # Show staged changes
-        ctx diff main                 # Show changes vs main branch
-        ctx diff feature-branch main  # Show changes between two branches
+        ctx difference                # Show current changes
+        ctx difference --staged       # Show staged changes
+        ctx difference main           # Show changes vs main branch
+        ctx difference feature-branch main # Show changes between two branches
     """
     result = ctx_core.get_diff(staged=staged, branches=list(branches))
     

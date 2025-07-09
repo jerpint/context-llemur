@@ -379,8 +379,8 @@ class CtxCore:
         except Exception as e:
             return OperationResult(False, error=f"Error starting exploration: {e}")
     
-    def capture_insights(self, message: str) -> OperationResult:
-        """Capture current insights and thinking"""
+    def save(self, message: str) -> OperationResult:
+        """Saves the current state of the context repository"""
         if not self.is_ctx_repo():
             return OperationResult(False, error="Not in a ctx repository")
         
@@ -391,17 +391,17 @@ class CtxCore:
         try:
             # Check if there are any changes to commit
             if not repo.is_dirty(untracked_files=True):
-                return OperationResult(True, "No changes to capture")
+                return OperationResult(True, "No changes to save")
             
             # Stage all changes
             repo.git.add('-A')
             
             # Commit with the provided message
             repo.index.commit(message)
-            return OperationResult(True, f"Captured: {message}", data={'message': message})
+            return OperationResult(True, f"Saved: {message}", data={'message': message})
             
         except Exception as e:
-            return OperationResult(False, error=f"Error capturing insights: {e}")
+            return OperationResult(False, error=f"Error saving context: {e}")
     
     def get_merge_preview(self, source_branch: str, target_branch: str = 'main') -> OperationResult:
         """Get a preview of what would happen in a merge"""
