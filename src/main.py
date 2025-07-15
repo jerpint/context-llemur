@@ -346,9 +346,6 @@ def mcp():
     """
     try:
         from .mcp_server import run_server
-        click.echo("🚀 Starting ctx MCP server...")
-        click.echo("   AI agents can now connect to use ctx as persistent memory")
-        click.echo("   Press Ctrl+C to stop the server")
         run_server()
     except KeyboardInterrupt:
         click.echo("\n👋 MCP server stopped")
