@@ -1,32 +1,27 @@
 # context-llemur 🐒
 
-context-llemur, or `ctx`, is a context-engineering CLI tool to enable collaborative memory for humans and LLMs - think "git for ideas".
+context-llemur, or `ctx` aims to make context management for LLMs portable and easy.
+It exposes key commands to humans and LLMs making edits easy to track and automate.
 
-`ctx` helps overcome LLM amnesia and aims to minimize human repetition by tracking the context of a given project using simple commands.
+## Core philosophy
+
+- **Context is not code** The context of a project evolves naturally over time - goals, TODOs, rules, milestones, etc. These concepts are traditionally tracked outside of repos (think PRs, Issues, etc.) - `ctx` tracks them as indidivual git repositories.
+- **Context should be portable** You should be able to provide the context easily to any LLM or human, without any friction. Context should be as platform agnostic as possible.
+- **Context history matters** - Just like code, it should be easy to track what changed in context, revert to previous states and freely explore without fear of losing context
+- **Each context is different** As little assumptions as possible should have to be made about the structure and contents of context
+
+## Design
+An important design decision of `ctx` is to *not* use embeddings. The idea is that context windows are getting longer, and agents are getting more capable of finding information when properly structured.
+
+At its core, a `ctx` folder is an independently tracked `git` repository. It can easily be loaded as an MCP server, and exposes all `ctx` primitives by default to any LLM with its own `ctx.txt` file.
 
 ## Installation
 
-Installation is recommended using the `uv` package manager.
+Using `uv`, just add it as a dependency to your project:
 
-### From git
-```bash
-# Public repository
-uv pip install git+https://github.com/jerpint/context-llemur.git
-```
+    uv add context-llemur
 
-```bash
-# Private repository (requires SSH keys)
-uv pip install git+ssh://git@github.com/jerpint/context-llemur.git
-```
-
-### Locally
-```bash
-git clone https://github.com/jerpint/context-llemur
-cd context-llemur
-uv venv && uv pip install -e .
-```
-
-After installation, activate your environment and use the ctx command:
+After installation, activate your environment to use the `ctx` command directly:
 ```bash
 source .venv/bin/activate
 ctx --help
@@ -34,54 +29,48 @@ ctx --help
 
 Alternatively, you can use `uv run ctx ...`
 
-> Coming soon: deploy on pypi
-
 ## Quickstart
 
-To get started, navigate to an existing git project or folder. Then run `ctx new`. This will automatically create a `context` folder, which will be tracked indepdently of your current project. It will also create a `ctx.config` at the root to keep track multiple context folders (more on that later).
+Start by initializing a new `ctx` folder: 
+
+    ctx new
+
+This will create, in your current directory, a new `context` folder and a `ctx.config` file to keep track of multiple context folders (more on that later).
 
 ```bash
-# Create a new context repository
-ctx new # Creates ./context/ directory
+# Create a new context/ repository
+ctx new
 
-# edit some files inside the `context/` directory
-echo "The goal of this project is to..." > goals.txt
+# add/edit some files inside the `context/` directory
+echo "The next goal of this project is to..." >> context/goals.txt
 
 # Save your context over time
-ctx save "updated goals"  # equivalent to git add -A && git commit -m "..."
+ctx save "Updated goals"  # equivalent to git add -A && git commit -m "..."
 ```
+Note that the idea here is to let LLMs run these commands on your behalf. Simply provide them the context and let them figure out the rest on your behalf.
 
-You can also `explore` new ideas and `integrate` them back to the context when ready
+In the following section we will see different ways to give access to LLMs to `ctx`
 
-```bash
-ctx explore "new-feature"
-echo "the first feature we will work on will be..." > TODOS.txt
-ctx save "add new feature"
-ctx integrate
-```
+## Use-cases
 
-## Use cases
+### Cursor/Agentic IDEs/CLI tools
 
-### Cursor
+The primary use-case for `ctx` is for it to be used with agentic LLMs. In fact, `ctx` was developped using `ctx` and `cursor`!
 
-The primary use-case for `ctx` is for it to be used with cursor. In fact, `ctx` was developped using `ctx`!
+A suggested workflow is to include the entire `context` folder at the start of each conversation. This can be done by adding e.g. a `.cursorrule` to always include the `context/` folder or by using the `MCP` server and the `ctx load` function.
 
-A suggested workflow is to include the entire `context` folder, or better add a `.cursorrule` to always include the `context` folder.
-
-By default, a new context folder includes `ctx.txt`, which explains to the LLM what context is, so it out-the-box will be aware that it is using `ctx` and you can simply ask it to update your contexts.
+By default, each new context folder includes the [ctx.txt](./src/template/ctx.txt) file, which explains to the LLM what context is, so it out-the-box will be aware that it is using `ctx` and know how to interact with it. `MCP` servers are also self-documenting so the LLM will immediately know what it can do with `ctx`.
 
 ### MCP Server
 
-`ctx` also exists as an MCP server with the same primitives as the CLI tool, allowing you to easily get your favourite LLMs up-to-date. Simply start a conversation with `ctx load`.
+`ctx` exists as a standalone MCP server with the same primitives as the CLI tool, allowing you to easily keep any LLM up-to-date. 
 
-> TODO: Add instructions for adding the MCP server.
+Start an MCP server using the `ctx mcp` command. Then just type `ctx load` to your LLM, it'll know what to do!
+
+#### Claude MCP
 
 
-
-
-#### Claude
-
-Install the project locally - then add to your `~/Library/Application\ Support/Claude/claude_desktop_config.json`
+To use `ctx` with Claude Desktop as an MCP service simply add to your `~/Library/Application\ Support/Claude/claude_desktop_config.json`
 
 ```
 {
@@ -91,37 +80,27 @@ Install the project locally - then add to your `~/Library/Application\ Support/C
       "args": [
         "run",
         "--directory",
-        "/Users/jerpint/context-llemur",
-        "python",
-        "src/mcp_server.py"
+        "/path/to/your/contexts/",
+        "--with",
+        "context-llemur",
+        "ctx",
+        "mcp"
       ]
     }
   }
 }
 ```
 
-Now simply start your conversation with `ctx load` and voila!
-
-Note: I haven't yet explored the MCP integration in its full capacity, but have a basic working implementation for now.
-
-## Why context-llemur?
-
-- **Platform agnostic** - Doesn't adhere to a specific provider, e.g. `CLAUDE.md` or `cursorrules`
-- **Portable**: Context repositories are just git directories with files, take them anywhere with you
-- **Git-friendly**: Uses familiar git workflows under the hood, easy to add/extend commands
-- **Flexible**: You control the workflow with the LLMs
+Now start your conversation with `ctx load` and voila!
 
 ## Core Commands
 
-### Repository Management
 - `ctx new [name]` - Create new context repository (default: ./context/)
+- `ctx save <message>` - save current insights, equivalent to `git -A && git commit -m`
 - `ctx status` - Show current repository status
 - `ctx list` - List all discovered context repositories
 - `ctx switch <name>` - Switch to a different context repository
-
-### Exploration & Integration
-- `ctx explore <topic>` - Start exploring a new topic (creates branch)
-- `ctx save <message>` - save current insights, equivalent to `git -A && git commit -m`
+- `ctx explore <topic>` - Start exploring a new topic (creates a new branch)
 - `ctx integrate <exploration>` - Merge insights back to main context
 - `ctx discard` - Reset to last commit, dropping all changes (with --force: also removes untracked files)
 
@@ -148,6 +127,19 @@ This design allows you to:
 - Work from your project root without changing directories
 - Keep repositories portable and git-friendly
 
+## More workflows
+
+You can `explore` new ideas and `integrate` them back to the main context when ready
+
+```bash
+ctx explore "new-feature"
+echo "the first feature we will work on will be..." > TODOS.txt
+ctx save "add new feature"
+ctx integrate
+```
+
+`ctx` is mostly wrapper commands around a git repository, so if you navigate to your `ctx` repository, you can also just use whatever git commands you are used to.
+
 ---
 
-⚠️ `ctx` is in active development
+⚠️ `ctx` is in active development and things might change.
