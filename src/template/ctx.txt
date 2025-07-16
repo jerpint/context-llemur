@@ -30,6 +30,12 @@ ctx integrate <exploration> # Merge insights back to main context
 ctx discard [--force]       # Reset to last commit, dropping changes
 ```
 
+### File Operations
+```bash
+ctx mv <source> <destination> # Move or rename files (git mv equivalent)
+ctx rm <filepath> [--force]   # Remove files from repository (git rm equivalent)
+```
+
 ### Content Operations
 ```bash
 ctx show_all [directory]    # Display all file contents with clear delimiters
@@ -87,6 +93,8 @@ ctx integrate "new-feature" # Merge back to main
 | `ctx save "<message>"` | `git add -A && git commit -m "<message>"` | Stage and commit changes |
 | `ctx integrate <branch>` | `git merge <branch>` | Merge branch into current |
 | `ctx discard` | `git reset --hard HEAD` | Reset to last commit |
+| `ctx mv <source> <destination>` | `git mv <source> <destination>` | Move or rename files |
+| `ctx rm <filepath> [--force]` | `git rm <filepath> [--force]` | Remove files from repository |
 
 ## Best Practices
 

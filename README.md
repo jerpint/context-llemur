@@ -135,6 +135,10 @@ Now start your conversation with `ctx load` and your AI agent will have access t
 - `ctx diff` - Show current changes
 - `ctx discard [--force]` - Reset to last commit, dropping all changes
 
+### File Operations
+- `ctx mv <source> <destination>` - Move or rename files (git mv equivalent)
+- `ctx rm <filepath> [--force]` - Remove files from repository (git rm equivalent)
+
 ### Content Operations
 - `ctx show_all [directory]` - Display all file contents with clear delimiters
 - `ctx recent` - Show recent activity and modified files
@@ -199,6 +203,8 @@ For users familiar with git, here's the direct mapping:
 | `ctx integrate <branch>` | `git merge <branch>` | Merge branch into current |
 | `ctx status` | `git status && git branch` | Show repo and branch status |
 | `ctx discard` | `git reset --hard HEAD` | Reset to last commit |
+| `ctx mv <source> <destination>` | `git mv <source> <destination>` | Move or rename files |
+| `ctx rm <filepath>` | `git rm <filepath>` | Remove files from repository |
 
 ## Use Cases
 

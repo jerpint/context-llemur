@@ -391,6 +391,51 @@ def ctx_list_files(directory: str = "") -> str:
     except Exception as e:
         return f"❌ Error listing files: {e}"
 
+@mcp.tool
+def ctx_move(source: str, destination: str) -> str:
+    """Move a file within the ctx repository.
+    
+    Git equivalent: git mv <source> <destination>
+    
+    Args:
+        source: Source file path (relative to ctx root)
+        destination: Destination file path (relative to ctx root)
+        
+    Returns:
+        Success message or error
+    """
+    result = core.move_file(source, destination)
+    
+    if result.success:
+        return f"✅ {result.message}"
+    else:
+        return f"❌ {result.error}"
+
+@mcp.tool
+def ctx_remove(filepath: str, force: bool = False) -> str:
+    """Remove a file from the ctx repository.
+    
+    Git equivalent: git rm <filepath>
+    
+    This will:
+    - Remove the file from git tracking
+    - Remove the file from the filesystem
+    - Fail if file has uncommitted changes (unless force=True)
+    
+    Args:
+        filepath: Path to the file to remove (relative to ctx root)
+        force: If True, force removal even if file has uncommitted changes
+        
+    Returns:
+        Success message or error
+    """
+    result = core.remove_file(filepath, force=force)
+    
+    if result.success:
+        return f"🗑️ {result.message}"
+    else:
+        return f"❌ {result.error}"
+
 # === Navigation Tools ===
 
 @mcp.tool

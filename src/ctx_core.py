@@ -816,6 +816,135 @@ class CtxCore:
         
         return output
     
+    def move_file(self, source: str, destination: str) -> OperationResult:
+        """Move a file within the ctx repository (git mv equivalent)
+        
+        Args:
+            source: Source file path (relative to ctx root)
+            destination: Destination file path (relative to ctx root)
+            
+        Returns:
+            OperationResult with success/failure information
+        """
+        if not self.is_ctx_repo():
+            return OperationResult(False, error="Not in a ctx repository")
+        
+        repo = self.get_ctx_repo()
+        if not repo:
+            return OperationResult(False, error="No ctx repository found")
+        
+        ctx_root = self.get_active_ctx_path()
+        if not ctx_root:
+            return OperationResult(False, error="Could not find ctx root")
+        
+        source_path = ctx_root / source
+        destination_path = ctx_root / destination
+        
+        # Validate source file exists
+        if not source_path.exists():
+            return OperationResult(False, error=f"Source file '{source}' does not exist")
+        
+        if not source_path.is_file():
+            return OperationResult(False, error=f"'{source}' is not a file")
+        
+        # Validate destination doesn't exist
+        if destination_path.exists():
+            return OperationResult(False, error=f"Destination '{destination}' already exists")
+        
+        # Create destination directory if it doesn't exist
+        destination_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        try:
+            # Use git mv to move the file
+            repo.git.mv(source, destination)
+            
+            return OperationResult(
+                True, 
+                f"Moved '{source}' to '{destination}'",
+                data={
+                    'source': source,
+                    'destination': destination
+                }
+            )
+            
+        except GitCommandError as e:
+            return OperationResult(False, error=f"Error moving file: {e}")
+        except Exception as e:
+            return OperationResult(False, error=f"Error moving file: {e}")
+    
+    def remove_file(self, filepath: str, force: bool = False) -> OperationResult:
+        """Remove a file from the ctx repository (git rm / safe rm equivalent)
+        
+        Args:
+            filepath: Path to the file to remove (relative to ctx root)
+            force: If True, force removal even if file has uncommitted changes
+            
+        Returns:
+            OperationResult with success/failure information
+        """
+        if not self.is_ctx_repo():
+            return OperationResult(False, error="Not in a ctx repository")
+        
+        repo = self.get_ctx_repo()
+        if not repo:
+            return OperationResult(False, error="No ctx repository found")
+        
+        ctx_root = self.get_active_ctx_path()
+        if not ctx_root:
+            return OperationResult(False, error="Could not find ctx root")
+        
+        file_path = ctx_root / filepath
+        
+        # Validate file exists
+        if not file_path.exists():
+            return OperationResult(False, error=f"File '{filepath}' does not exist")
+        
+        if not file_path.is_file():
+            return OperationResult(False, error=f"'{filepath}' is not a file")
+        
+        try:
+            # Check if file is tracked by git
+            try:
+                repo.git.ls_files('--error-unmatch', filepath)
+                is_tracked = True
+            except GitCommandError:
+                is_tracked = False
+            
+            if is_tracked:
+                # Use git rm to remove the file from git and filesystem
+                if force:
+                    repo.git.rm('-f', filepath)
+                else:
+                    # Check if file has uncommitted changes
+                    try:
+                        repo.git.rm(filepath)
+                    except GitCommandError as e:
+                        if "has changes staged" in str(e) or "has local modifications" in str(e):
+                            return OperationResult(
+                                False, 
+                                error=f"File '{filepath}' has uncommitted changes. Use --force to remove anyway."
+                            )
+                        else:
+                            return OperationResult(False, error=f"Error removing file: {e}")
+            else:
+                # File is not tracked by git, just remove from filesystem
+                file_path.unlink()
+            
+            return OperationResult(
+                True, 
+                f"Removed '{filepath}'" + (" (forced)" if force else ""),
+                data={
+                    'filepath': filepath,
+                    'was_tracked': is_tracked,
+                    'forced': force
+                }
+            )
+            
+        except GitCommandError as e:
+            return OperationResult(False, error=f"Error removing file: {e}")
+        except Exception as e:
+            return OperationResult(False, error=f"Error removing file: {e}")
+    
     def delete_repository(self, name: str, force: bool = False) -> OperationResult:
         """Delete a ctx repository"""
         config = self.load_ctx_config()

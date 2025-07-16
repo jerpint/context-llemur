@@ -326,5 +326,51 @@ def mcp():
         click.echo(f"❌ Error starting MCP server: {e}", err=True)
         sys.exit(1)
 
+@main.command()
+@click.argument('source')
+@click.argument('destination')
+def mv(source, destination):
+    """Move a file within the ctx repository
+    
+    Git equivalent: git mv <source> <destination>
+    
+    Examples:
+        ctx mv old-file.txt new-file.txt       # Rename file
+        ctx mv file.txt subdir/file.txt        # Move to subdirectory
+        ctx mv subdir/file.txt file.txt        # Move to parent directory
+    """
+    result = ctx_core.move_file(source, destination)
+    
+    if result.success:
+        click.echo(f"✓ {result.message}")
+    else:
+        click.echo(f"Error: {result.error}", err=True)
+        sys.exit(1)
+
+@main.command()
+@click.argument('filepath')
+@click.option('--force', is_flag=True, help='Force removal even if file has uncommitted changes')
+def rm(filepath, force):
+    """Remove a file from the ctx repository
+    
+    Git equivalent: git rm <filepath>
+    
+    This will:
+    - Remove the file from git tracking
+    - Remove the file from the filesystem
+    - Fail if file has uncommitted changes (unless --force is used)
+    
+    Examples:
+        ctx rm old-file.txt                    # Remove tracked file
+        ctx rm --force modified-file.txt       # Force remove file with changes
+    """
+    result = ctx_core.remove_file(filepath, force=force)
+    
+    if result.success:
+        click.echo(f"✓ {result.message}")
+    else:
+        click.echo(f"Error: {result.error}", err=True)
+        sys.exit(1)
+
 if __name__ == "__main__":
     main()
