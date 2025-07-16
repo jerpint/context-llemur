@@ -116,7 +116,7 @@ Add this to your `~/Library/Application\ Support/Claude/claude_desktop_config.js
 
 Now start your conversation with `ctx load` and your AI agent will have access to:
 - **Repository Management**: Create, switch, and manage contexts
-- **Semantic Workflows**: Explore topics, capture insights, integrate knowledge
+- **Semantic Workflows**: Explore topics, save insights, integrate knowledge
 - **File Operations**: Read, write, and organize context files
 - **Navigation**: Browse branches, history, and search content
 
@@ -130,7 +130,7 @@ Now start your conversation with `ctx load` and your AI agent will have access t
 
 ### Semantic Workflows
 - `ctx explore <topic>` - Start exploring a new topic (creates a new branch)
-- `ctx capture <message>` - Save current insights, equivalent to `git add -A && git commit -m`
+- `ctx save <message>` - Save current insights, equivalent to `git add -A && git commit -m`
 - `ctx integrate <exploration>` - Merge insights back to main context
 - `ctx diff` - Show current changes
 - `ctx discard [--force]` - Reset to last commit, dropping all changes
@@ -182,7 +182,7 @@ You can `explore` new ideas and `integrate` them back to the main context when r
 ```bash
 ctx explore "new-feature"
 echo "the first feature we will work on will be..." > TODOS.txt
-ctx capture "add new feature"
+ctx save "add new feature"
 ctx integrate "new-feature"
 ```
 
