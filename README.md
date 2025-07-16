@@ -1,25 +1,53 @@
 # context-llemur 🐒
 
-context-llemur, or `ctx` aims to make context management for LLMs portable and easy.
-It exposes key commands to humans and LLMs making edits easy to track and automate.
+*Stop re-explaining your context to every LLM.*
 
-## Core philosophy
+Every AI conversation starts from zero. Whether you're switching from Claude to Cursor, or from ChatGPT to a local LLM, you're constantly re-explaining your project context. `ctx` solves this by giving you **portable, version-controlled context** that travels between ALL your AI tools.
 
-- **Context is not code** The context of a project evolves naturally over time - goals, TODOs, rules, milestones, etc. These concepts are traditionally tracked outside of repos (think of PRs, Issues, etc.) - `ctx` tracks them as individual git repositories.
-- **Context should be portable** You should be able to provide the context easily to any LLM or human, without any friction. Context should be as platform agnostic as possible.
-- **Context history matters** - Just like code, it should be easy to track what changed in context, revert to previous states and freely explore without fear of losing context
-- **Each context is different** As little assumptions as possible should have to be made about the structure and contents of context
+## **ctx Features**
 
-## Design
-An important design decision of `ctx` is to *not* use embeddings. The idea is that context windows are getting longer, and agents are getting more capable of finding information when properly structured.
+- **🔄 MCP Server Integration**: Full Model Context Protocol support
+- **📦 Portable Context**: Same context works in Claude, Cursor, ChatGPT, and local LLMs  
+- **🌲 Branching Conversations**: Explore alternatives without losing your main thread
+- **🔧 Git-Based**: It's just git under the hood - no magic, no vendor lock-in, no assumptions
 
-At its core, a `ctx` folder is an independently tracked `git` repository. It can easily be loaded as an MCP server, and exposes all `ctx` primitives by default to any LLM with its own `ctx.txt` file.
+## The ctx Workflow
+
+```bash
+# Create new project
+ctx new "my-awesome-project"
+
+# Morning: Curate your ideas with e.g. Claude Desktop via MCP
+# Just start the conversation with "ctx load"
+ctx load 
+
+# ... work with Claude on model design ...
+ctx save "Decided on PostgreSQL with Redis cache"
+# ... Or just ask Claude to save for you!
+
+# Afternoon: Cursor builds on Claude's work
+# Cursor now knows about your database decisions
+# Just prompt with e.g. "implement next steps"
+ctx load
+
+# Evening: Explore new ideas without affecting the main context with another LLM
+ctx explore "serverless-alternative"
+# ... explore serverless approach ...
+ctx save "Serverless could work but cost concerns"
+
+# When ready, re-integrate the ideas back to main context
+ctx integrate
+
+# Next day: Any AI tool knows your full journey
+ctx load
+```
 
 ## Installation
 
-Using `uv`, just add it as a dependency to your project:
-
-    uv add context-llemur
+For now, install with uv:
+```bash
+uv add context-llemur
+```
 
 After installation, activate your environment to use the `ctx` command directly:
 ```bash
@@ -28,6 +56,11 @@ ctx --help
 ```
 
 Alternatively, you can use `uv run ctx ...`
+Or with pip:
+```bash
+pip install context-llemur
+```
+
 
 ## Quickstart
 
@@ -35,7 +68,7 @@ Start by initializing a new `ctx` folder:
 
     ctx new
 
-This will create, in your current directory, a new `context` folder and a `ctx.config` file to keep track of multiple context folders (more on that later).
+This will create, in your current directory, a new `context` folder and a `ctx.config` file to keep track of multiple context folders.
 
 ```bash
 # Create a new context/ repository
@@ -47,32 +80,22 @@ echo "The next goal of this project is to..." >> context/goals.txt
 # Save your context over time
 ctx save "Updated goals"  # equivalent to git add -A && git commit -m "..."
 ```
-Note that the idea here is to let LLMs run these commands on your behalf. Simply provide them the context and let them figure out the rest on your behalf.
 
-In the following section, we will see different ways to give LLMs access to `ctx`
+## MCP Server Integration
 
-## Use-cases
+`ctx` includes a full MCP server with tools that give AI agents persistent, version-controlled memory.
 
-### Cursor/Agentic IDEs/CLI tools
+### Starting the MCP Server
 
-The primary use-case for `ctx` is for it to be used with agentic LLMs. In fact, `ctx` was developed using `ctx` and `cursor`!
-
-A suggested workflow is to include the entire `context` folder at the start of each conversation. This can be done by adding e.g. a `.cursorrule` to always include the `context/` folder or by using the `MCP` server and the `ctx load` function.
-
-By default, each new context folder includes the [ctx.txt](./src/template/ctx.txt) file, which explains to the LLM what context is, so it out-of-the-box will be aware that it is using `ctx` and know how to interact with it. `MCP` servers are also self-documenting so the LLM will immediately know what it can do with `ctx`.
-
-### MCP Server
-
-`ctx` exists as a standalone MCP server with the same primitives as the CLI tool, allowing you to easily keep any LLM up-to-date. 
-
-Start an MCP server using the `ctx mcp` command. Then just type `ctx load` to your LLM, it'll know what to do!
-
-#### Claude MCP
-
-
-To use `ctx` with Claude Desktop as an MCP service, simply add the following to your `~/Library/Application\ Support/Claude/claude_desktop_config.json`
-
+```bash
+ctx mcp
 ```
+
+### Claude Desktop Integration
+
+Add this to your `~/Library/Application\ Support/Claude/claude_desktop_config.json`:
+
+```json
 {
   "mcpServers": {
     "context-llemur": {
@@ -91,18 +114,43 @@ To use `ctx` with Claude Desktop as an MCP service, simply add the following to 
 }
 ```
 
-Now start your conversation with `ctx load` and voila!
+Now start your conversation with `ctx load` and your AI agent will have access to:
+- **Repository Management**: Create, switch, and manage contexts
+- **Semantic Workflows**: Explore topics, capture insights, integrate knowledge
+- **File Operations**: Read, write, and organize context files
+- **Navigation**: Browse branches, history, and search content
 
 ## Core Commands
 
+### Repository Management
 - `ctx new [name]` - Create new context repository (default: ./context/)
-- `ctx save <message>` - Save current insights, equivalent to `git add -A && git commit -m`
 - `ctx status` - Show current repository status
 - `ctx list` - List all discovered context repositories
 - `ctx switch <name>` - Switch to a different context repository
+
+### Semantic Workflows
 - `ctx explore <topic>` - Start exploring a new topic (creates a new branch)
+- `ctx capture <message>` - Save current insights, equivalent to `git add -A && git commit -m`
 - `ctx integrate <exploration>` - Merge insights back to main context
-- `ctx discard` - Reset to last commit, dropping all changes (with --force: also removes untracked files)
+- `ctx diff` - Show current changes
+- `ctx discard [--force]` - Reset to last commit, dropping all changes
+
+### Content Operations
+- `ctx show_all [directory]` - Display all file contents with clear delimiters
+- `ctx recent` - Show recent activity and modified files
+- `ctx mcp` - Start MCP server for AI agent integration
+
+## Core Philosophy
+
+- **Context is not code** The context of a project evolves naturally over time - goals, TODOs, rules, milestones, etc. These concepts are traditionally tracked outside of repos (think of PRs, Issues, etc.) - `ctx` tracks them as individual git repositories.
+- **Context should be portable** You should be able to provide the context easily to any LLM or human, without any friction. Context should be as platform agnostic as possible.
+- **Context history matters** - Just like code, it should be easy to track what changed in context, revert to previous states and freely explore without fear of losing context
+- **Each context is different** As little assumptions as possible should have to be made about the structure and contents of context
+
+## Design
+An important design decision of `ctx` is to *not* use embeddings. The idea is that context windows are getting longer, and agents are getting more capable of finding information when properly structured.
+
+At its core, a `ctx` folder is an independently tracked `git` repository. It can easily be loaded as an MCP server, and exposes all `ctx` primitives by default to any LLM with its own `ctx.txt` file.
 
 ## Managing Contexts
 
@@ -127,18 +175,28 @@ This design allows you to:
 - Work from your project root without changing directories
 - Keep repositories portable and git-friendly
 
-## More workflows
+## Advanced Workflows
 
-You can `explore` new ideas and `integrate` them back to the main context when ready
+You can `explore` new ideas and `integrate` them back to the main context when ready:
 
 ```bash
 ctx explore "new-feature"
 echo "the first feature we will work on will be..." > TODOS.txt
-ctx save "add new feature"
-ctx integrate
+ctx capture "add new feature"
+ctx integrate "new-feature"
 ```
 
 `ctx` is mostly wrapper commands around a git repository, so if you navigate to your `ctx` repository, you can also just use whatever git commands you are used to.
+
+## Use Cases
+
+### Cursor/Agentic IDEs/CLI tools
+
+The primary use-case for `ctx` is for it to be used with agentic LLMs. In fact, `ctx` was developed using `ctx` and `cursor`!
+
+A suggested workflow is to include the entire `context` folder at the start of each conversation. This can be done by adding e.g. a `.cursorrule` to always include the `context/` folder or by using the `MCP` server and the `ctx load` function.
+
+By default, each new context folder includes the [ctx.txt](./src/template/ctx.txt) file, which explains to the LLM what context is, so it out-of-the-box will be aware that it is using `ctx` and know how to interact with it. `MCP` servers are also self-documenting so the LLM will immediately know what it can do with `ctx`.
 
 ---
 
