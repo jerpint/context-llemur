@@ -188,6 +188,18 @@ ctx integrate "new-feature"
 
 `ctx` is mostly wrapper commands around a git repository, so if you navigate to your `ctx` repository, you can also just use whatever git commands you are used to.
 
+
+## Git Command Mapping
+For users familiar with git, here's the direct mapping:
+
+| ctx Command | Git Equivalent | Purpose |
+|-------------|----------------|---------|
+| `ctx explore <topic>` | `git checkout -b <topic>` | Create and switch to new branch |
+| `ctx save "<message>"` | `git add -A && git commit -m "<message>"` | Stage and commit changes |
+| `ctx integrate <branch>` | `git merge <branch>` | Merge branch into current |
+| `ctx status` | `git status && git branch` | Show repo and branch status |
+| `ctx discard` | `git reset --hard HEAD` | Reset to last commit |
+
 ## Use Cases
 
 ### Cursor/Agentic IDEs/CLI tools
