@@ -11,7 +11,7 @@ Every AI conversation starts from zero. Whether you're switching from Claude to 
 - **🌲 Branching Conversations**: Explore alternatives without losing your main thread
 - **🔧 Git-Based**: It's just git under the hood - no magic, no vendor lock-in, no assumptions
 
-## The ctx Workflow
+## ctx Workflow
 
 ```bash
 # Create new project
