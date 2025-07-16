@@ -1,17 +1,10 @@
 ---
-Note:️ This file provides global context and should ideally not be modified or removed
+Note: This file provides global context and should ideally not be modified or removed
 ---
 
 # context-llemur 🐒: Collaborative Memory for Humans and LLMs
 
-context-llemur, or `ctx`, is a context-engineering CLI tool to enable collaborative memory for humans and LLMs - think "git for ideas".
-
-`ctx` helps overcome LLM amnesia and aims to minimize human repetition by tracking the context of a given project using simple commands.
-
-## What is ctx?
-`ctx` is a version-controlled collaborative thinking system where ideas evolve through commits, branch into experiments, and merge across different minds (human and AI). 
-
-Not a knowledge base, but a living memory that travels between LLM sessions.
+context-llemur (`ctx`) is a version-controlled collaborative thinking system where ideas evolve through commits, branch into experiments, and merge across different minds (human and AI). It's git for thoughts, not code.
 
 ## Key Problems We Solve
 - **LLM Amnesia**: Every new session starts from zero
@@ -23,58 +16,42 @@ Not a knowledge base, but a living memory that travels between LLM sessions.
 
 ### Repository Management
 ```bash
-ctx new                     # Create new ctx repository in 'context' directory
-ctx new <directory>         # Create new ctx repository in custom directory  
+ctx new [name]              # Create new context repository (default: ./context/)
 ctx status                  # Show current branch and repository status
-ctx list                    # List all discovered ctx repositories with status
-ctx switch <name>           # Switch to a different ctx repository
+ctx list                    # List all discovered context repositories
+ctx switch <name>           # Switch to a different context repository
 ```
 
-### Exploration & Integration
+### Semantic Workflows
 ```bash
-ctx explore <topic>         # Start exploring a new topic or idea
+ctx explore <topic>         # Start exploring a new topic (creates new branch)
 ctx save "<message>"        # Save current insights (git add -A && git commit -m)
 ctx integrate <exploration> # Merge insights back to main context
-ctx discard                 # Reset to last commit, dropping all changes
-ctx discard --force         # Reset and remove untracked files
+ctx discard [--force]       # Reset to last commit, dropping changes
 ```
 
-## Quickstart Workflow
-
+### Content Operations
 ```bash
-# Create a new context repository
-ctx new # Creates ./context/ directory
-
-# Edit some files inside the `context/` directory
-echo "The goal of this project is to..." > goals.txt
-
-# Save your context over time
-ctx save "updated goals"  
-
-# Explore new ideas and integrate them back
-ctx explore "new-feature"
-echo "the first feature we will work on will be..." > TODOS.txt
-ctx save "add new feature"
-ctx integrate "new-feature"
+ctx show_all [directory]    # Display all file contents with clear delimiters
+ctx recent                  # Show recent activity and modified files
+ctx diff                    # Show current changes
 ```
 
-## Git Command Mapping
-For users familiar with git, here's the direct mapping:
+### MCP Server
+```bash
+ctx mcp                     # Start MCP server for AI agent integration
+ctx load                    # Load context (use this to start conversations)
+```
 
-| ctx Command | Git Equivalent | Purpose |
-|-------------|----------------|---------|
-| `ctx explore <topic>` | `git checkout -b <topic>` | Create and switch to new branch |
-| `ctx save "<message>"` | `git add -A && git commit -m "<message>"` | Stage and commit changes |
-| `ctx integrate <branch>` | `git merge <branch>` | Merge branch into current |
-| `ctx status` | `git status && git branch` | Show repo and branch status |
-| `ctx discard` | `git reset --hard HEAD` | Reset to last commit |
+## MCP Server Integration
 
-## Why context-llemur?
+When working as an MCP server, you have access to tools that provide:
+- **Repository Management**: Create, switch, and manage contexts
+- **Semantic Workflows**: Explore topics, save insights, integrate knowledge
+- **File Operations**: Read, write, and organize context files
+- **Navigation**: Browse branches, history, and search content
 
-- **Platform agnostic** - Doesn't adhere to a specific provider, e.g. `CLAUDE.md` or `cursorrules`
-- **Portable**: Context repositories are just git directories with files, take them anywhere
-- **Git-friendly**: Uses familiar git workflows under the hood, easy to add/extend commands
-- **Flexible**: You control the workflow with the LLMs
+Start conversations with `ctx load` to access the current context.
 
 ## Managing Multiple Contexts
 
@@ -89,34 +66,37 @@ active_ctx = "research"
 discovered_ctx = ["context", "research", "experiments"]
 ```
 
-This allows you to:
-- Create multiple context repositories in the same workspace
-- Switch between them easily with `ctx switch <name>`
-- Work from your project root without changing directories
-- Keep repositories portable and git-friendly
+This allows you to create multiple context repositories in the same workspace and switch between them easily with `ctx switch <name>`.
+
+## Quick Workflow
+
+```bash
+ctx new "my-project"        # Create new context
+# Edit files in context/ directory
+ctx save "initial setup"   # Save changes
+ctx explore "new-feature"  # Branch to explore ideas
+ctx save "feature design"  # Save exploration
+ctx integrate "new-feature" # Merge back to main
+```
+
+## Git Command Mapping
+
+| ctx Command | Git Equivalent | Purpose |
+|-------------|----------------|---------|
+| `ctx explore <topic>` | `git checkout -b <topic>` | Create and switch to new branch |
+| `ctx save "<message>"` | `git add -A && git commit -m "<message>"` | Stage and commit changes |
+| `ctx integrate <branch>` | `git merge <branch>` | Merge branch into current |
+| `ctx discard` | `git reset --hard HEAD` | Reset to last commit |
 
 ## Best Practices
 
-### Repository Structure
-- Each ctx repository is identified by a `.ctx` marker file
-- Multiple ctx repositories can coexist in the same workspace
-- Commands work from any subdirectory within a ctx repository
-
-### Branch Naming
-- Use descriptive names: `bias-detection-approach`, `performance-optimization`
-- Separate words with hyphens for readability
-
-### Commit Strategy  
-- Commit early and often to preserve thinking evolution
-- Use clear commit messages that capture the insight or decision
-
-### Integration Protocol
-- Always preview integrations first with `--preview` flag when available
-- Main branch represents the current consensus/truth
-- Exploration branches are for trying new ideas and approaches
+- **Commit early and often** to preserve thinking evolution
+- **Use descriptive branch names**: `bias-detection-approach`, `performance-optimization`
+- **Main branch represents current consensus** - explorations are for trying new ideas
+- **Files stored as plain text** for maximum compatibility across all AI tools
 
 ## Technical Notes
-- ctx repositories are standard git repositories with additional tooling
-- All git commands work normally within the ctx repository directory
-- Files are stored as plain text for maximum compatibility
-- Repository state travels with the ctx directory
+- Context repositories are standard git repositories with additional tooling
+- All git commands work normally within the context directory
+- Repository state travels with the context directory
+- MCP server provides programmatic access to all ctx functionality
