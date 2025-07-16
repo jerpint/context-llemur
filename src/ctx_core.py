@@ -769,6 +769,53 @@ class CtxCore:
             is_valid=is_valid
         )
     
+    def format_show_all(self, directory: Optional[str] = None, branch: Optional[str] = None, pattern: Optional[str] = None) -> str:
+        """Format show_all output with clear delimiters for LLM context absorption.
+        
+        This method combines the data retrieval and formatting into a single output,
+        perfect for providing complete context to LLM agents or CLI users.
+        
+        Args:
+            directory: Optional directory to show (relative to ctx root)
+            branch: Optional branch to show files from (default: current branch)
+            pattern: Optional file pattern to filter (e.g., "*.md")
+            
+        Returns:
+            Formatted string with all file contents and clear delimiters
+        """
+        result = self.show_all(directory=directory, branch=branch, pattern=pattern)
+        
+        if not result.success:
+            return f"❌ {result.error}"
+        
+        show_result = result.data
+        
+        # Build formatted output
+        output = "=" * 80 + "\n"
+        output += "📁 CTX REPOSITORY CONTENTS\n"
+        output += "=" * 80 + "\n"
+        output += f"Branch: {show_result.branch}\n"
+        if show_result.directory:
+            output += f"Directory: {show_result.directory}\n"
+        if show_result.pattern:
+            output += f"Pattern: {show_result.pattern}\n"
+        output += f"Total files: {show_result.total_files}\n\n"
+        
+        # Add each file with clear delimiters
+        for i, file_info in enumerate(show_result.files):
+            output += "=" * 80 + "\n"
+            output += f"📄 FILE {i+1}/{show_result.total_files}: {file_info['path']}\n"
+            output += f"📊 Size: {file_info['size']} chars, Lines: {file_info['lines']}\n"
+            output += "=" * 80 + "\n\n"
+            output += file_info['content']
+            output += "\n\n"
+        
+        output += "=" * 80 + "\n"
+        output += "✅ REPOSITORY CONTENTS COMPLETE\n"
+        output += "=" * 80 + "\n"
+        
+        return output
+    
     def delete_repository(self, name: str, force: bool = False) -> OperationResult:
         """Delete a ctx repository"""
         config = self.load_ctx_config()

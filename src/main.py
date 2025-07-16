@@ -253,49 +253,18 @@ def switch(ctx_name):
 @click.argument('directory', required=False)
 @click.option('--branch', help='Branch to show files from (default: current branch)')
 @click.option('--pattern', help='File pattern to filter (e.g., "*.md")')
-def show_all(directory, branch, pattern):
-    """Display all file contents with clear delimiters
+def load(directory, branch, pattern):
+    """Load the current ctx repository contents
     
     Perfect for LLM context absorption - shows entire repository state in one command.
     
     Examples:
-        ctx show_all                    # Show all files in current branch
-        ctx show_all --pattern "*.md"   # Show only markdown files
-        ctx show_all docs --branch main # Show files in 'docs' directory from main branch
+        ctx load                        # Show all files in current branch
+        ctx load --pattern "*.md"       # Show only markdown files
+        ctx load docs --branch main     # Show files in 'docs' directory from main branch
     """
-    result = ctx_core.show_all(directory=directory, branch=branch, pattern=pattern)
-    
-    if not result.success:
-        click.echo(f"Error: {result.error}", err=True)
-        sys.exit(1)
-    
-    show_result = result.data
-    
-    # Print header information
-    click.echo("=" * 80)
-    click.echo("📁 CTX REPOSITORY CONTENTS")
-    click.echo("=" * 80)
-    click.echo(f"Branch: {show_result.branch}")
-    if show_result.directory:
-        click.echo(f"Directory: {show_result.directory}")
-    if show_result.pattern:
-        click.echo(f"Pattern: {show_result.pattern}")
-    click.echo(f"Total files: {show_result.total_files}")
-    click.echo()
-    
-    # Print each file with clear delimiters
-    for i, file_info in enumerate(show_result.files):
-        click.echo(f"{'=' * 80}")
-        click.echo(f"📄 FILE {i+1}/{show_result.total_files}: {file_info['path']}")
-        click.echo(f"📊 Size: {file_info['size']} chars, Lines: {file_info['lines']}")
-        click.echo(f"{'=' * 80}")
-        click.echo()
-        click.echo(file_info['content'])
-        click.echo()
-    
-    click.echo("=" * 80)
-    click.echo("✅ REPOSITORY CONTENTS COMPLETE")
-    click.echo("=" * 80)
+    formatted_output = ctx_core.format_show_all(directory=directory, branch=branch, pattern=pattern)
+    click.echo(formatted_output)
 
 @main.command()
 @click.option('--staged', is_flag=True, help='Show staged changes')
