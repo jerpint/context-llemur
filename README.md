@@ -6,92 +6,39 @@ Every AI conversation starts from zero. Whether you're switching from Claude to 
 
 ## **ctx Features**
 
-- **🔄 MCP Server Integration**: Full Model Context Protocol support
-- **📦 Portable Context**: Same context works in Claude, Cursor, ChatGPT, and local LLMs  
-- **🌲 Branching Conversations**: Explore alternatives without losing your main thread
-- **🔧 Git-Based**: It's just git under the hood - no magic, no vendor lock-in, no assumptions
-
-## ctx Workflow
-
-```bash
-# Create new project
-ctx new "my-awesome-project"
-
-# Morning: Curate your ideas with e.g. Claude Desktop via MCP
-# Just start the conversation with "ctx load"
-ctx load 
-
-# ... work with Claude on model design ...
-ctx save "Decided on PostgreSQL with Redis cache"
-# ... Or just ask Claude to save for you!
-
-# Afternoon: Cursor builds on Claude's work
-# Cursor now knows about your database decisions
-# Just prompt with e.g. "implement next steps"
-ctx load
-
-# Evening: Explore new ideas without affecting the main context with another LLM
-ctx explore "serverless-alternative"
-# ... explore serverless approach ...
-ctx save "Serverless could work but cost concerns"
-
-# When ready, re-integrate the ideas back to main context
-ctx integrate
-
-# Next day: Any AI tool knows your full journey
-ctx load
-```
-
-## Installation
-
-For now, install with uv:
-```bash
-uv add context-llemur
-```
-
-After installation, activate your environment to use the `ctx` command directly:
-```bash
-source .venv/bin/activate
-ctx --help
-```
-
-Alternatively, you can use `uv run ctx ...`
-Or with pip:
-```bash
-pip install context-llemur
-```
-
+- **MCP Server Integration**: Full Model Context Protocol support
+- **Git-Based**: It's just git under the hood - no magic, no vendor lock-in, no assumptions
+- **CLI for Humans**: Take over whenever you feel like it
+- **Portable**: Use it with any LLM - no vendor lock-in, no assumptions
 
 ## Quickstart
 
-Start by initializing a new `ctx` folder: 
 
-    ctx new
-
-This will create, in your current directory, a new `context` folder and a `ctx.config` file to keep track of multiple context folders.
+### CLI
 
 ```bash
-# Create a new context/ repository
+# Create a new context repository (defaults to ./context)
 ctx new
 
 # add/edit some files inside the `context/` directory
+# or use your favourite LLM to edit for you (e.g. cursor, MCP)
 echo "The next goal of this project is to..." >> context/goals.txt
 
-# Save your context over time
+# Save your context for versioning and tracking 
 ctx save "Updated goals"  # equivalent to git add -A && git commit -m "..."
 ```
 
-## MCP Server Integration
+### MCP
 
 `ctx` includes a full MCP server with tools that give AI agents persistent, version-controlled memory.
 
-### Starting the MCP Server
+#### Starting the MCP Server
 
 ```bash
 ctx mcp
 ```
 
-### Claude Desktop Integration
+#### Claude Desktop Integration
 
 Add this to your `~/Library/Application\ Support/Claude/claude_desktop_config.json`:
 
@@ -103,7 +50,7 @@ Add this to your `~/Library/Application\ Support/Claude/claude_desktop_config.js
       "args": [
         "run",
         "--directory",
-        "/path/to/your/contexts/",
+        "/path/to/your/project/",
         "--with",
         "context-llemur",
         "ctx",
@@ -114,21 +61,42 @@ Add this to your `~/Library/Application\ Support/Claude/claude_desktop_config.js
 }
 ```
 
-Now start your conversation with `ctx load` and your AI agent will have access to:
+Now start your conversation with `ctx load` and your LLM will have access to the entire context folder and all MCP-supported operations:
+
 - **Repository Management**: Create, switch, and manage contexts
 - **Semantic Workflows**: Explore topics, save insights, integrate knowledge
 - **File Operations**: Read, write, and organize context files
 - **Navigation**: Browse branches, history, and search content
 
+
+## Installation
+
+Install with uv:
+```bash
+uv add context-llemur
+```
+
+After installation, activate your environment to use the `ctx` command directly:
+```bash
+source .venv/bin/activate
+ctx --help
+```
+
+Alternatively, you can use `uv run ctx ...`
+
+To install with pip:
+```bash
+pip install context-llemur
+```
 ## Core Commands
 
-### Repository Management
+### ctx Management
 - `ctx new [name]` - Create new context repository (default: ./context/)
 - `ctx status` - Show current repository status
 - `ctx list` - List all discovered context repositories
 - `ctx switch <name>` - Switch to a different context repository
 
-### Semantic Workflows
+### ctx Workflows
 - `ctx explore <topic>` - Start exploring a new topic (creates a new branch)
 - `ctx save <message>` - Save current insights, equivalent to `git add -A && git commit -m`
 - `ctx integrate <exploration>` - Merge insights back to main context
@@ -140,7 +108,7 @@ Now start your conversation with `ctx load` and your AI agent will have access t
 - `ctx rm <filepath> [--force]` - Remove files from repository (git rm equivalent)
 
 ### Content Operations
-- `ctx show_all [directory]` - Display all file contents with clear delimiters
+- `ctx load [directory]` - Display all file contents with clear delimiters
 - `ctx recent` - Show recent activity and modified files
 - `ctx mcp` - Start MCP server for AI agent integration
 
@@ -152,7 +120,7 @@ Now start your conversation with `ctx load` and your AI agent will have access t
 - **Each context is different** As little assumptions as possible should have to be made about the structure and contents of context
 
 ## Design
-An important design decision of `ctx` is to *not* use embeddings. The idea is that context windows are getting longer, and agents are getting more capable of finding information when properly structured.
+An important design decision of `ctx` is to *not* use embeddings for retrieval. Instead, it relies on LLMs and humans to manage the context in a structured manner. The idea is that context windows are getting longer, and agents are getting more capable of finding information when properly structured.
 
 At its core, a `ctx` folder is an independently tracked `git` repository. It can easily be loaded as an MCP server, and exposes all `ctx` primitives by default to any LLM with its own `ctx.txt` file.
 
@@ -198,13 +166,13 @@ For users familiar with git, here's the direct mapping:
 
 | ctx Command | Git Equivalent | Purpose |
 |-------------|----------------|---------|
-| `ctx explore <topic>` | `git checkout -b <topic>` | Create and switch to new branch |
 | `ctx save "<message>"` | `git add -A && git commit -m "<message>"` | Stage and commit changes |
-| `ctx integrate <branch>` | `git merge <branch>` | Merge branch into current |
 | `ctx status` | `git status && git branch` | Show repo and branch status |
 | `ctx discard` | `git reset --hard HEAD` | Reset to last commit |
 | `ctx mv <source> <destination>` | `git mv <source> <destination>` | Move or rename files |
 | `ctx rm <filepath>` | `git rm <filepath>` | Remove files from repository |
+| `ctx explore <topic>` | `git checkout -b <topic>` | Create and switch to new branch |
+| `ctx integrate <branch>` | `git merge <branch>` | Merge branch into current |
 
 ## Use Cases
 
@@ -215,6 +183,11 @@ The primary use-case for `ctx` is for it to be used with agentic LLMs. In fact, 
 A suggested workflow is to include the entire `context` folder at the start of each conversation. This can be done by adding e.g. a `.cursorrule` to always include the `context/` folder or by using the `MCP` server and the `ctx load` function.
 
 By default, each new context folder includes the [ctx.txt](./src/template/ctx.txt) file, which explains to the LLM what context is, so it out-of-the-box will be aware that it is using `ctx` and know how to interact with it. `MCP` servers are also self-documenting so the LLM will immediately know what it can do with `ctx`.
+
+### Claude Desktop / Other LLMs
+Keep track of topics you care about in an explicit way. One use-case I've been using this for is tracking workouts and having Claude generate new workouts for me based on my workout history and leveraging its artifcats.
+
+I basically just run `ctx load + propose me a new workout` inside Claude Desktop and it immediately will know what to do. I can in the same conversation log what I did, and ask Claude to save it back to the context.
 
 ---
 
