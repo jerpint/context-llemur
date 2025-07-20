@@ -253,8 +253,8 @@ def switch(ctx_name):
 @click.argument('directory', required=False)
 @click.option('--branch', help='Branch to show files from (default: current branch)')
 @click.option('--pattern', help='File pattern to filter (e.g., "*.md")')
-def load(directory, branch, pattern):
-    """Load the current ctx repository contents
+def show_all(directory, branch, pattern):
+    """Show all the current ctx repository contents
     
     Perfect for LLM context absorption - shows entire repository state in one command.
     
@@ -263,8 +263,29 @@ def load(directory, branch, pattern):
         ctx load --pattern "*.md"       # Show only markdown files
         ctx load docs --branch main     # Show files in 'docs' directory from main branch
     """
-    formatted_output = ctx_core.format_show_all(directory=directory, branch=branch, pattern=pattern)
-    click.echo(formatted_output)
+    result = ctx_core.show_all(directory=directory, branch=branch, pattern=pattern)
+    if result.success:
+        click.echo(result.data)
+    click.echo(result.error)
+
+
+@main.command()
+@click.argument('ctx_name', required=False)
+@click.option('--pattern', help='File pattern to filter (e.g., "*.md")')
+def load(ctx_name, pattern):
+    """Load the ctx_name
+    
+    Perfect for LLM context absorption - shows entire repository state in one command.
+    
+    Examples:
+        ctx load                        # Show all files in current branch
+        ctx load --pattern "*.md"       # Show only markdown files
+        ctx load docs --branch main     # Show files in 'docs' directory from main branch
+    """
+    result = ctx_core.load_ctx(ctx_name, pattern=pattern)
+    if result.success:
+        click.echo(result.data)
+    click.echo(result.error)
 
 @main.command()
 @click.option('--staged', is_flag=True, help='Show staged changes')
