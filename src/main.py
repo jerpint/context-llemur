@@ -3,15 +3,24 @@
 import click
 import sys
 from src.ctx_core import CtxCore
+from src.cli_styles import (
+    print_banner, print_section_header, print_success_box, print_warning_box, 
+    print_error_box, print_repository_card, print_status_summary, 
+    print_integration_preview, print_celebration, print_explore_banner
+)
 
 # Initialize the core logic
 ctx_core = CtxCore()
 
-@click.group()
-@click.version_option()
-def main():
+@click.group(invoke_without_command=True)
+# @click.version_option()
+@click.pass_context
+def main(ctx):
     """ctx: collaborative memory for humans and LLMs (context-llemur)"""
-    pass
+    # Show beautiful banner when no command is provided
+    if ctx.invoked_subcommand is None:
+        print_banner()
+        click.echo(ctx.get_help())
 
 @main.command()
 @click.argument('directory', required=False, default='context')
@@ -30,21 +39,24 @@ def new(directory, custom_dir):
     result = ctx_core.create_new_ctx(target_dir)
     
     if result.success:
-        click.echo(f"Creating '{target_dir}' directory and copying template files...")
+        print_section_header("Creating New Repository", "🎯")
+        
+        click.echo(f"\n📂 Creating '{target_dir}' directory and copying template files...")
         for filename in result.data['copied_files']:
-            click.echo(f"Copied {filename}")
-        click.echo("Created .ctx marker file")
-        click.echo(f"Initializing git repository in '{target_dir}'...")
-        click.echo(f"✓ {result.message}")
-        click.echo(f"✓ Files committed with 'first commit' message")
-        click.echo(f"✓ Added '{target_dir}' to ctx config as active repository")
-        click.echo("")
-        click.echo("Next steps:")
-        click.echo(f"1. cd {target_dir}")
-        click.echo(f"2. Edit ctx.txt with your context")
-        click.echo("3. Start exploring ideas on feature branches!")
+            click.echo(f"   ✓ Copied {filename}")
+        click.echo("   ✓ Created .ctx marker file")
+        click.echo(f"   ✓ Initialized git repository")
+        click.echo(f"   ✓ Files committed with 'first commit' message")
+        click.echo(f"   ✓ Added '{target_dir}' to ctx config as active repository")
+        
+        print_celebration()
+        
+        print_section_header("Next Steps", "🚀")
+        click.echo(f"1. {click.style('cd ' + target_dir, bold=True, fg='cyan')}")
+        click.echo(f"2. {click.style('Edit ctx.txt with your context', bold=True, fg='cyan')}")
+        click.echo(f"3. {click.style('Start exploring ideas on feature branches!', bold=True, fg='cyan')}")
     else:
-        click.echo(f"Error: {result.error}", err=True)
+        print_error_box(f"Failed to create repository: {result.error}")
         sys.exit(1)
 
 @main.command()
@@ -65,24 +77,17 @@ def integrate(exploration, preview, target):
     
     merge_preview = preview_result.data
     
-    # Show preview
-    click.echo(f"Merge preview: {merge_preview.source_branch} → {merge_preview.target_branch}")
-    click.echo("=" * 50)
+    # Show beautiful preview
+    print_integration_preview(
+        source=merge_preview.source_branch,
+        target=merge_preview.target_branch,
+        changed_files=merge_preview.changed_files,
+        has_conflicts=merge_preview.has_conflicts,
+        conflicts=merge_preview.conflicts
+    )
     
     if not merge_preview.changed_files:
-        click.echo("No changes to merge.")
         return
-    
-    click.echo(f"Files that would be affected: {len(merge_preview.changed_files)}")
-    for filepath in merge_preview.changed_files:
-        click.echo(f"  • {filepath}")
-    
-    if merge_preview.has_conflicts:
-        click.echo(f"\n⚠️  Potential conflicts detected: {len(merge_preview.conflicts)}")
-        for conflict in merge_preview.conflicts:
-            click.echo(f"  • {conflict['file']}")
-    else:
-        click.echo(f"\n✓ No conflicts detected. Merge should be clean.")
     
     # If preview mode, stop here
     if preview:
@@ -99,10 +104,10 @@ def integrate(exploration, preview, target):
     integration_result = ctx_core.perform_integration(exploration, target)
     
     if integration_result.success:
-        click.echo(f"\n🎉 Insights from '{exploration}' successfully integrated into '{target}'!")
+        print_celebration()
+        print_success_box(f"Insights from '{exploration}' successfully integrated into '{target}'!", "🎉")
     else:
-        click.echo(f"\n❌ Integration failed: {integration_result.error}")
-        click.echo(f"Check the ctx/ directory for any conflicts that need manual resolution.")
+        print_error_box(f"Integration failed: {integration_result.error}\nCheck the repository for any conflicts that need manual resolution.")
         sys.exit(1)
 
 @main.command()
@@ -111,21 +116,19 @@ def status():
     result = ctx_core.get_status()
     
     if not result.success:
-        click.echo(f"Error: {result.error}", err=True)
+        print_error_box(f"Failed to get status: {result.error}")
         sys.exit(1)
     
     status_data = result.data
     
-    click.echo(f"ctx repository: {status_data.repository.name} ({status_data.repository.absolute_path})")
-    click.echo(f"Current branch: {status_data.current_branch}")
-    click.echo(f"All branches: {', '.join(status_data.all_branches)}")
-    
-    if status_data.is_dirty:
-        click.echo("\nUncommitted changes:")
-        for item in status_data.uncommitted_changes:
-            click.echo(f"  {item}")
-    else:
-        click.echo("\nWorking tree clean")
+    print_status_summary(
+        repository_name=status_data.repository.name,
+        current_branch=status_data.current_branch,
+        all_branches=status_data.all_branches,
+        is_dirty=status_data.is_dirty,
+        uncommitted_changes=status_data.uncommitted_changes,
+        repo_path=status_data.repository.absolute_path
+    )
 
 @main.command()
 @click.argument('topic')
@@ -137,10 +140,10 @@ def explore(topic):
     result = ctx_core.start_exploration(topic)
     
     if result.success:
-        click.echo(f"✓ Started exploring '{topic}'")
-        click.echo("Document your ideas and insights as you explore!")
+        print_explore_banner(topic)
+        print_success_box("Branch created successfully!\nDocument your ideas and insights as you explore!", "🚀")
     else:
-        click.echo(f"Error: {result.error}", err=True)
+        print_error_box(f"Failed to start exploration: {result.error}")
         sys.exit(1)
 
 @main.command()
@@ -153,9 +156,9 @@ def save(message):
     result = ctx_core.save(message)
     
     if result.success:
-        click.echo(f"✓ {result.message}")
+        print_success_box(f"Saved: {result.message}", "💾")
     else:
-        click.echo(f"Error: {result.error}", err=True)
+        print_error_box(f"Failed to save: {result.error}")
         sys.exit(1)
 
 @main.command()
@@ -210,29 +213,25 @@ def list_repos():
     result = ctx_core.list_repositories()
     
     if not result.success:
-        click.echo(f"Error: {result.error}", err=True)
+        print_error_box(f"Failed to list repositories: {result.error}")
         sys.exit(1)
     
     repositories = result.data
     
     if not repositories:
-        click.echo("No ctx repositories found in config.")
-        click.echo("Run 'ctx new' to create a new ctx repository.")
+        print_section_header("No Repositories Found", "📂")
+        print_warning_box("No ctx repositories found in config.\nRun 'ctx new' to create a new ctx repository.", "💡")
         return
     
-    click.echo("Discovered ctx repositories:")
-    click.echo("=" * 50)
+    print_section_header("Discovered Repositories", "📂")
     
     for repo_info in repositories:
-        marker = "→ " if repo_info.is_active else "  "
-        status = "✓" if repo_info.exists else "✗"
-        
-        click.echo(f"{marker}{status} {repo_info.name}")
-        if repo_info.is_active:
-            click.echo("     (Currently active)")
-        if not repo_info.exists:
-            click.echo("     (Directory missing or invalid)")
-        click.echo()
+        print_repository_card(
+            name=repo_info.name,
+            is_active=repo_info.is_active,
+            exists=repo_info.exists,
+            path=getattr(repo_info, 'path', None)
+        )
 
 @main.command()
 @click.argument('ctx_name')
@@ -241,12 +240,13 @@ def switch(ctx_name):
     result = ctx_core.switch_repository(ctx_name)
     
     if result.success:
-        click.echo(f"✓ {result.message}")
+        print_success_box(f"Switched to repository: {ctx_name}", "🔄")
     else:
         available = result.data.get('available_repositories', []) if result.data else []
-        click.echo(f"Error: {result.error}", err=True)
+        error_msg = f"Failed to switch: {result.error}"
         if available:
-            click.echo(f"Available repositories: {', '.join(available)}")
+            error_msg += f"\nAvailable repositories: {', '.join(available)}"
+        print_error_box(error_msg)
         sys.exit(1)
 
 @main.command()
