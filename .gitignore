@@ -6,7 +6,7 @@ dist/
 wheels/
 *.egg-info
 
-context/
+ctx-llemur
 
 # Virtual environments
 .venv
