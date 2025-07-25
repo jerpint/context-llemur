@@ -7,7 +7,7 @@ Every AI conversation starts from zero. Whether you're switching from Claude to 
 ## **ctx Features**
 
 - **MCP Server Integration**: Full Model Context Protocol support
-- **Git-Based**: It's just git under the hood - no magic, no vendor lock-in, no assumptions
+- **Git-Based**: It's just git under the hood
 - **CLI for Humans**: Take over whenever you feel like it
 - **Portable**: Use it with any LLM - no vendor lock-in, no assumptions
 

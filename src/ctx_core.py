@@ -51,11 +51,51 @@ class MergePreview:
 @dataclass
 class ShowAllResult:
     """Result of show_all operation"""
-    files: List[Dict[str, Any]]
+    file_contents: List[Dict[str, Any]]
+    all_files: Any
+    ctx_name: str
+    # info: RepositoryInfo
+
     total_files: int
     directory: Optional[str]
     branch: str
     pattern: Optional[str]
+    top_level: bool
+
+def collect_files(path: Path, relative_base: str = "", recursive=True, pattern: Optional[str] = None):
+    # Get all files in the target directory
+    all_files = []
+    
+    def _collect_files(path: Path, relative_base: str = "", recursive=True, pattern: Optional[str] = None):
+        """Recursively collect all files"""
+        for item in path.iterdir():
+            if item.is_file():
+                # Skip git files and hidden files
+                if item.name.startswith('.'):
+                    continue
+                
+                # Build relative path from ctx root
+                if relative_base:
+                    rel_path = f"{relative_base}/{item.name}"
+                else:
+                    rel_path = item.name
+                
+                # Apply pattern filter if specified
+                if pattern and not fnmatch.fnmatch(item.name, pattern):
+                    continue
+                
+                all_files.append((rel_path, item))
+            elif item.is_dir() and not item.name.startswith('.') and recursive:
+                # Recursively scan subdirectories
+                new_base = f"{relative_base}/{item.name}" if relative_base else item.name
+                _collect_files(item, new_base)
+    
+    _collect_files(path, relative_base, recursive, pattern)
+
+    # Sort files for consistent output
+    all_files.sort(key=lambda x: x[0])
+    return all_files
+
 
 class CtxCore:
     """Core business logic for ctx operations"""
@@ -621,7 +661,19 @@ class CtxCore:
         except Exception as e:
             return OperationResult(False, error=f"Error getting diff: {e}")
 
-    def show_all(self, directory: Optional[str] = None, branch: Optional[str] = None, pattern: Optional[str] = None) -> OperationResult:
+    def load_ctx(self, ctx_name: Optional[str] = None, top_level: bool = True, pattern: Optional[str] = None) -> OperationResult:
+        if not self.is_ctx_repo():
+            return OperationResult(False, error="Not in a ctx repository")
+
+        if ctx_name:
+            switch_result = self.switch_repository(ctx_name)
+            if not switch_result.success:
+                return OperationResult(False, error=f"ctx '{ctx_name}' not found. Use 'ctx list' to show available contexts.")
+        
+        return self.show_all(top_level=top_level, pattern=pattern)
+
+
+    def show_all(self, directory: Optional[str] = None, branch: Optional[str] = None, pattern: Optional[str] = None, top_level: bool = False) -> OperationResult:
         """Display all file contents with clear delimiters for LLM context absorption
         
         Args:
@@ -638,7 +690,7 @@ class CtxCore:
         repo = self.get_ctx_repo()
         if not repo:
             return OperationResult(False, error="No ctx repository found")
-            
+
         # Determine the branch to use
         if branch is None:
             branch = self.get_current_branch()
@@ -665,41 +717,16 @@ class CtxCore:
             scan_path = "."
         
         try:
-            # Get all files in the target directory (recursively)
-            all_files = []
-            
-            def collect_files(path: Path, relative_base: str = ""):
-                """Recursively collect all files"""
-                for item in path.iterdir():
-                    if item.is_file():
-                        # Skip git files and hidden files
-                        if item.name.startswith('.'):
-                            continue
-                        
-                        # Build relative path from ctx root
-                        if relative_base:
-                            rel_path = f"{relative_base}/{item.name}"
-                        else:
-                            rel_path = item.name
-                        
-                        # Apply pattern filter if specified
-                        if pattern and not fnmatch.fnmatch(item.name, pattern):
-                            continue
-                        
-                        all_files.append((rel_path, item))
-                    elif item.is_dir() and not item.name.startswith('.'):
-                        # Recursively scan subdirectories
-                        new_base = f"{relative_base}/{item.name}" if relative_base else item.name
-                        collect_files(item, new_base)
-            
-            collect_files(target_dir, scan_path if scan_path != "." else "")
-            
-            # Sort files for consistent output
-            all_files.sort(key=lambda x: x[0])
+
+            all_files = collect_files(target_dir, scan_path if scan_path != "." else "")
+            if top_level:
+                top_level_files = collect_files(target_dir, scan_path if scan_path != "." else "", recursive=False)
+    
             
             # Read file contents
             file_contents = []
-            for rel_path, file_path in all_files:
+            current_files = top_level_files if top_level else all_files
+            for rel_path, file_path in current_files:
                 try:
                     # Try to get content from the specified branch
                     if branch != self.get_current_branch():
@@ -729,15 +756,21 @@ class CtxCore:
                         'lines': 0
                     })
             
+            active_ctx = self.load_ctx_config()['active_ctx']
             result = ShowAllResult(
-                files=file_contents,
+                ctx_name = active_ctx,
+                file_contents=file_contents,
+                all_files=all_files,
                 total_files=len(file_contents),
                 directory=directory,
                 branch=branch,
-                pattern=pattern
+                pattern=pattern,
+                top_level=top_level
             )
+
+            formatted_result = self.format_show_all(result)
             
-            return OperationResult(True, "Files retrieved successfully", data=result)
+            return OperationResult(True, "Files retrieved successfully", data=formatted_result)
             
         except Exception as e:
             return OperationResult(False, error=f"Error reading files: {e}") 
@@ -769,7 +802,7 @@ class CtxCore:
             is_valid=is_valid
         )
     
-    def format_show_all(self, directory: Optional[str] = None, branch: Optional[str] = None, pattern: Optional[str] = None) -> str:
+    def format_show_all(self, show_result: ShowAllResult) -> str:
         """Format show_all output with clear delimiters for LLM context absorption.
         
         This method combines the data retrieval and formatting into a single output,
@@ -783,17 +816,13 @@ class CtxCore:
         Returns:
             Formatted string with all file contents and clear delimiters
         """
-        result = self.show_all(directory=directory, branch=branch, pattern=pattern)
-        
-        if not result.success:
-            return f"❌ {result.error}"
-        
-        show_result = result.data
         
         # Build formatted output
         output = "=" * 80 + "\n"
         output += "📁 CTX REPOSITORY CONTENTS\n"
         output += "=" * 80 + "\n"
+
+        output += f"Active ctx: {show_result.ctx_name}"
         output += f"Branch: {show_result.branch}\n"
         if show_result.directory:
             output += f"Directory: {show_result.directory}\n"
@@ -801,8 +830,13 @@ class CtxCore:
             output += f"Pattern: {show_result.pattern}\n"
         output += f"Total files: {show_result.total_files}\n\n"
         
+        if show_result.top_level:
+            output += "Showing only top-level files and contents of ctx directory\n"
+        else:
+            output += "Showing all files and contents of ctx directory\n"
+
         # Add each file with clear delimiters
-        for i, file_info in enumerate(show_result.files):
+        for i, file_info in enumerate(show_result.file_contents):
             output += "=" * 80 + "\n"
             output += f"📄 FILE {i+1}/{show_result.total_files}: {file_info['path']}\n"
             output += f"📊 Size: {file_info['size']} chars, Lines: {file_info['lines']}\n"
@@ -811,7 +845,14 @@ class CtxCore:
             output += "\n\n"
         
         output += "=" * 80 + "\n"
-        output += "✅ REPOSITORY CONTENTS COMPLETE\n"
+        output += "List of all available files:\n"
+        output += "=" * 80 + "\n"
+        for file in show_result.all_files:
+            output += str(file[0]) + "\n"
+        output += "\n\n"
+        
+        output += "=" * 80 + "\n"
+        output += f"✅ Currently active ctx: {show_result.ctx_name}\n"
         output += "=" * 80 + "\n"
         
         return output

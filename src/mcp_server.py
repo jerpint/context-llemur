@@ -25,8 +25,8 @@ core = CtxCore()
 # === Repository Management Tools ===
 
 @mcp.tool
-def ctx_load(directory: str = "", branch: str = "", pattern: str = "") -> str:
-    """Load the current ctx repository contents.
+def ctx_show_all(directory: str = "", branch: str = "", pattern: str = "") -> str:
+    """Show all the current ctx repository contents.
 
     ctx is a system for collaborative memory for LLMs and humans.
 
@@ -47,7 +47,31 @@ def ctx_load(directory: str = "", branch: str = "", pattern: str = "") -> str:
     branch_param = branch if branch else None
     pattern_param = pattern if pattern else None
     
-    return core.format_show_all(directory=dir_param, branch=branch_param, pattern=pattern_param)
+    result = core.show_all(directory=dir_param, branch=branch_param, pattern=pattern_param)
+    if result.success:
+        return result.data
+    return result.error
+
+@mcp.tool
+def ctx_load(ctx_name: str = "", pattern: str = ""):
+    """Load the ctx from the ctx_name context   
+
+    To be invoked when a user asks for ctx load.
+    Will show all available files, and contents of all top-level files.
+    Perfect for LLM context absorption - shows entire repository state in one command.
+    If a user does not specify a name, the currently active ctx will be loaded.
+    
+    Examples:
+        ctx load                        # Show all files in current active ctx
+        ctx load --pattern "*.md"       # Show only markdown files
+    
+    """
+    pattern_param = pattern if pattern else None
+    ctx_name_param = ctx_name if ctx_name else None
+    result = core.load_ctx(ctx_name=ctx_name_param, pattern=pattern_param)
+    if result.success:
+        return result.data
+    return result.error
 
 @mcp.tool
 def ctx_new(directory: str = "context") -> str:
