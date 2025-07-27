@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "context-llemur"
-version = "0.2.1"
+version = "0.2.2"
 description = "context-llemur: collaborative memory for humans and LLMs"
 readme = "README.md"
 requires-python = ">=3.11"
