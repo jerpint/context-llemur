@@ -53,8 +53,8 @@ def new(directory, custom_dir):
         
         print_section_header("Next Steps", "🚀")
         click.echo(f"1. {click.style('cd ' + target_dir, bold=True, fg='cyan')}")
-        click.echo(f"2. {click.style('Edit ctx.txt with your context', bold=True, fg='cyan')}")
-        click.echo(f"3. {click.style('Start exploring ideas on feature branches!', bold=True, fg='cyan')}")
+        click.echo(f"2. {click.style('Edit files with your context', bold=True, fg='cyan')}")
+        click.echo(f"3. {click.style('Save your work and load it into LLMs!', bold=True, fg='cyan')}")
     else:
         print_error_box(f"Failed to create repository: {result.error}")
         sys.exit(1)
