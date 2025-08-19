@@ -399,8 +399,8 @@ def remote():
     pass
 
 @remote.command(name="add")
-@click.argument('name')
 @click.argument('url')
+@click.argument('name', required=False, default='origin')
 def remote_add(name, url):
     """Add a remote repository
 
@@ -408,7 +408,7 @@ def remote_add(name, url):
         ctx remote add origin https://github.com/user/repo.git
         ctx remote add hf https://huggingface.co/datasets/user/ctx-repo
     """
-    result = ctx_core.add_remote(name, url)
+    result = ctx_core.add_remote(url=url, name=name)
 
     if result.success:
         print_success_box(f"Remote '{name}' added successfully!", "🔗")
@@ -456,15 +456,9 @@ def sync(remote_name):
 
     if result.success:
         sync_data = result.data
-        print_success_box(f"Successfully synced with remote '{remote_name}'!", "🔄")
+        print_success_box(f"Successfully synced branch {sync_data['branch']} with remote '{remote_name}'!", "🔄")
 
         if sync_data:
-            click.echo(f"  Branch: {sync_data.get('branch', 'unknown')}")
-            if sync_data.get('pulled'):
-                click.echo(f"  ✓ Pulled from remote")
-            if sync_data.get('pushed'):
-                click.echo(f"  ✓ Pushed to remote")
-
             if sync_data.get('pull_error'):
                 click.echo(f"  ⚠️  Pull had issues: {sync_data['pull_error']}")
     else:

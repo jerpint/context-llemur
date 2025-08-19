@@ -1156,14 +1156,13 @@ class CtxCore:
                         data=sync_info
                     )
                 else:
-                    # Try to continue even if pull fails (might be first push)
+                    # Try to continue even if pull fails (branch might not exist on remote)
                     sync_info['pull_error'] = str(e)
 
             try:
-                # Push to remote
-                push_info = remote.push(current_branch)
+                # Push to remote with set-upstream
+                repo.git.push("--set-upstream", remote_name, repo.head.ref)
                 sync_info['pushed'] = True
-                sync_info['push_info'] = str(push_info[0].flags) if push_info else "up-to-date"
 
             except GitCommandError as e:
                 if "rejected" in str(e).lower():

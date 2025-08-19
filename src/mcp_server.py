@@ -463,17 +463,17 @@ def ctx_remove(filepath: str, force: bool = False) -> str:
 # === Remote Repository Management Tools ===
 
 @mcp.tool
-def ctx_remote_add(name: str, url: str) -> str:
+def ctx_remote_add(url: str, name: str = "origin") -> str:
     """Add a remote repository.
 
     Args:
-        name: Name for the remote (e.g., 'origin', 'hf', 'github')
         url: Git URL for the remote repository
+        name: Name for the remote (e.g., 'origin', 'hf', 'github') (default: 'origin')
 
     Returns:
         Success message or error
     """
-    result = core.add_remote(name, url)
+    result = core.add_remote(url, name)
 
     if result.success:
         return f"🔗 {result.message}"
